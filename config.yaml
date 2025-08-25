@@ -1,0 +1,40 @@
+data_dir: ./data
+dataset_path: ./data/unified
+execution:
+  cache_features: true
+  mode: deep
+  parallel_processing: true
+  progress_bar: true
+features:
+  fft:
+    n_rings: 3
+  glcm:
+    angles:
+    - 0
+    distances:
+    - 5
+  lbp:
+    points: 24
+    radius: 3
+model:
+  auto_optimize: true
+  optimization_time: 5
+  random_state: 42
+  target_size:
+  - 512
+  - 512
+  test_size: 0.2
+  top_k_features: 50
+output_dir: ./results
+report:
+  generate_pdf: false
+  include_technical_details: true
+  language: es
+validation:
+  n_cv_folds: 5
+  stability_iterations: 30
+  use_loocv: true
+visualization:
+  include_interpretability: true
+  save_plots: true
+  show_top_features: 10

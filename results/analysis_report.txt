@@ -1,0 +1,42 @@
+================================================================================
+REPORTE DE ANÁLISIS - HOLOGRAM CLASSIFIER V2.0
+================================================================================
+Fecha: 2025-08-24 23:58:53
+
+INFORMACIÓN DEL DATASET
+----------------------------------------
+Total de imágenes: 304
+Células sanas: 151
+Células SCD: 153
+Balance: 49.7% / 50.3%
+
+RENDIMIENTO DEL MODELO
+----------------------------------------
+Accuracy (Entrenamiento): 0.996
+Accuracy (Test): 0.934
+AUC Score: 0.995
+
+VALIDACIÓN CRUZADA (5-FOLD)
+----------------------------------------
+AUC: 0.992 ± 0.005
+Accuracy: 0.954 ± 0.013
+Precision: 0.938 ± 0.017
+Recall: 0.973 ± 0.039
+
+LEAVE-ONE-OUT CROSS-VALIDATION
+----------------------------------------
+Accuracy: 97.4%
+Errores: 8/304
+
+TOP 10 CARACTERÍSTICAS MÁS DISCRIMINATIVAS
+----------------------------------------
+ 1. glcm_correlation: Cohen's d = 2.227
+ 2. extent: Cohen's d = 1.405
+ 3. solidity: Cohen's d = 1.331
+ 4. convex_area_ratio: Cohen's d = -1.197
+ 5. hu_moment_0: Cohen's d = -0.960
+ 6. lbp_hist_22: Cohen's d = -0.811
+ 7. lbp_hist_17: Cohen's d = 0.780
+ 8. lbp_hist_0: Cohen's d = -0.774
+ 9. lbp_hist_18: Cohen's d = 0.770
+10. lbp_hist_16: Cohen's d = 0.746
