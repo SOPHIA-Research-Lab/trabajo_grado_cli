@@ -1,0 +1,30 @@
+================================================================================
+ANÁLISIS INDIVIDUAL DE IMAGEN - HOLOGRAM CLASSIFIER V2.0
+================================================================================
+Fecha: 2025-08-25 11:06:49
+Imagen: ./data/dataset_1/SCD/20250321_210836.png
+
+PREDICCIÓN
+----------------------------------------
+Clase predicha: SCD
+Confianza: 90.5%
+Probabilidad Healthy: 0.095
+Probabilidad SCD: 0.905
+
+ANÁLISIS DE CARACTERÍSTICAS
+----------------------------------------
+Características totales extraídas: 84
+Características seleccionadas por modelo: 50
+
+TOP 15 CARACTERÍSTICAS MÁS DISCRIMINATIVAS
+----------------------------------------
+ 1. lbp_hist_0: 0.0719
+ 2. lbp_hist_1: 0.0405
+ 3. lbp_hist_2: 0.0220
+ 4. lbp_hist_4: 0.0103
+ 5. lbp_hist_5: 0.0093
+ 6. lbp_hist_6: 0.0086
+ 7. lbp_hist_7: 0.0092
+ 8. lbp_hist_8: 0.0090
+ 9. lbp_hist_9: 0.0091
+10. lbp_hist_10: 0.0087
