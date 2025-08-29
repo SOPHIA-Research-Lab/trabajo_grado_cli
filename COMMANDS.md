@@ -139,7 +139,7 @@ python cli.py config [opciones]
 - `--optimize {true,false}`: Habilitar/deshabilitar optimización
 - `--progress {true,false}`: Habilitar/deshabilitar barras progreso
 - `--output DIR`: Directorio de salida
-- *(sin opciones)*: Mostrar configuración actual
+
 
 **Ejemplos:**
 ```bash
@@ -174,23 +174,12 @@ python cli.py analyze --mode quick
 ```bash
 python cli.py analyze --mode full
 ```
-- **Tiempo**: ~5 minutos
-- **Características**: ≤35
-- **Validación**: 5-fold CV + LOOCV
-- **Optimización**: 5 min máx
-- **Ideal**: Uso general
 
 ### **🔬 Modo Deep**
 ```bash
 python cli.py analyze --mode deep
 ```
-- **Tiempo**: ~10 minutos
-- **Características**: ≤50
-- **Validación**: Completa + estabilidad
-- **Optimización**: 10 min máx
-- **Ideal**: Investigación
 
----
 
 ## 🆘 **COMANDOS DE AYUDA**
 
