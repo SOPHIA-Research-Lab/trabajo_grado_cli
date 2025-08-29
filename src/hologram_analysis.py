@@ -40,6 +40,13 @@ import time
 import hashlib
 import pickle
 from tqdm import tqdm
+
+# Import anomaly detector
+try:
+    from .anomaly_detector import DistanceBasedAnomalyDetector, create_anomaly_detector_from_training_data
+except ImportError:
+    from anomaly_detector import DistanceBasedAnomalyDetector, create_anomaly_detector_from_training_data
+
 # Import dataset unifier
 try:
     from .dataset_unifier import create_unified_dataset_if_needed
@@ -65,6 +72,10 @@ class HologramAnalyzer:
         
         self.results = {}
         self.feature_names = []
+        
+        # Detector de anomalías
+        self.anomaly_detector = None
+        self._load_anomaly_detector()
         
         # Crear directorio de resultados
         os.makedirs(self.config['output_dir'], exist_ok=True)
@@ -93,6 +104,37 @@ class HologramAnalyzer:
             'validation': {'use_loocv': True, 'n_cv_folds': 5, 'stability_iterations': 30},
             'visualization': {'save_plots': True, 'show_top_features': 10, 'include_interpretability': True}
         }
+    
+    def _load_anomaly_detector(self):
+        """Cargar o crear detector de anomalías"""
+        anomaly_detector_path = Path(self.config['output_dir']) / "anomaly_detector.pkl"
+        
+        if anomaly_detector_path.exists():
+            try:
+                self.anomaly_detector = DistanceBasedAnomalyDetector.load(anomaly_detector_path)
+                print(f"🔍 Detector de anomalías cargado: {anomaly_detector_path}")
+            except Exception as e:
+                print(f"⚠️  Error cargando detector de anomalías: {e}")
+                self.anomaly_detector = None
+        else:
+            print("🔧 Detector de anomalías no encontrado (se creará después del entrenamiento)")
+            self.anomaly_detector = None
+    
+    def _create_anomaly_detector(self, features: np.ndarray, labels: np.ndarray):
+        """Crear detector de anomalías usando datos de entrenamiento"""
+        try:
+            print("🔧 Creando detector de anomalías...")
+            self.anomaly_detector = DistanceBasedAnomalyDetector(threshold_percentile=95.0)
+            self.anomaly_detector.fit(features, labels, self.feature_names)
+            
+            # Guardar detector
+            anomaly_detector_path = Path(self.config['output_dir']) / "anomaly_detector.pkl"
+            self.anomaly_detector.save(anomaly_detector_path)
+            
+            print("✅ Detector de anomalías creado y guardado")
+        except Exception as e:
+            print(f"⚠️  Error creando detector de anomalías: {e}")
+            self.anomaly_detector = None
     
     def _adjust_config_for_mode(self, mode: str):
         """Ajustar configuración según el modo de ejecución"""
@@ -170,6 +212,15 @@ class HologramAnalyzer:
         
         # Añadir reporte a resultados
         self.results['report'] = report
+        
+        # 8. Guardar modelo entrenado
+        print(f"\n8️⃣ Guardando modelo entrenado...")
+        self.save_model()
+        
+        # 9. Crear detector de anomalías
+        if self.config.get('anomaly_detection', {}).get('enabled', True):
+            print(f"\n9️⃣ Creando detector de anomalías...")
+            self._create_anomaly_detector(X_features, y)
         
         print(f"\n✅ ANÁLISIS COMPLETADO EXITOSAMENTE")
         print(f"📁 Resultados guardados en: {self.config['output_dir']}")
@@ -624,6 +675,10 @@ class HologramAnalyzer:
         print(f"   Test Score: {test_score:.3f}")
         print(f"   AUC Score: {auc_score:.3f}")
         print(f"   Características seleccionadas: {len(selected_feature_names)}")
+        
+        # Crear detector de anomalías si no existe
+        if self.anomaly_detector is None:
+            self._create_anomaly_detector(X, y)
         
         return model, results
     
@@ -1184,6 +1239,42 @@ class HologramAnalyzer:
             }
         }
         
+        # 7. Detección de anomalías
+        if self.anomaly_detector is not None:
+            try:
+                anomaly_result = self.anomaly_detector.predict(features)
+                result['anomaly_detection'] = {
+                    'is_anomaly': anomaly_result['is_anomaly'],
+                    'anomaly_score': float(anomaly_result['anomaly_score']),
+                    'mahalanobis_distance': float(anomaly_result['mahalanobis_distance']),
+                    'threshold': float(anomaly_result['threshold']),
+                    'p_value': float(anomaly_result['p_value']),
+                    'closest_class': anomaly_result.get('closest_class'),
+                    'interpretation': 'ANOMALÍA DETECTADA - Muestra fuera del dominio de entrenamiento' if anomaly_result['is_anomaly'] else 'Muestra dentro del dominio normal'
+                }
+                
+                # Mostrar información de anomalía
+                if anomaly_result['is_anomaly']:
+                    print(f"\n🚨 ANOMALÍA DETECTADA")
+                    print(f"   Distancia de Mahalanobis: {anomaly_result['mahalanobis_distance']:.3f}")
+                    print(f"   Umbral: {anomaly_result['threshold']:.3f}")
+                    print(f"   Score de anomalía: {anomaly_result['anomaly_score']:.3f}")
+                    print(f"   P-value: {anomaly_result['p_value']:.6f}")
+                else:
+                    print(f"\n✅ MUESTRA NORMAL")
+                    print(f"   Distancia de Mahalanobis: {anomaly_result['mahalanobis_distance']:.3f}")
+                
+            except Exception as e:
+                result['anomaly_detection'] = {
+                    'error': f"Error en detección de anomalías: {str(e)}"
+                }
+                print(f"\n⚠️  Error en detección de anomalías: {e}")
+        else:
+            result['anomaly_detection'] = {
+                'available': False,
+                'message': 'Detector de anomalías no disponible'
+            }
+        
         # 6. Mostrar resumen de características más importantes
         print("\n📈 TOP 5 CARACTERÍSTICAS MÁS DISCRIMINATIVAS:")
         for i, feat in enumerate(feature_analysis[:5]):
@@ -1247,25 +1338,63 @@ class HologramAnalyzer:
         """Crear visualización para análisis individual"""
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 12))
         
-        # 1. Imagen original
+        # Verificar si hay información de anomalía
+        anomaly_info = result.get('anomaly_detection', {})
+        is_anomaly = anomaly_info.get('is_anomaly', False)
+        
+        # 1. Imagen original con indicador de anomalía
         ax1.imshow(image)
-        ax1.set_title(f'Imagen Analizada\nPredicción: {result["prediction"]["class"]} ({result["prediction"]["confidence"]:.1%})')
+        
+        # Título con indicador de anomalía
+        pred_class = result["prediction"]["class"]
+        confidence = result["prediction"]["confidence"]
+        if is_anomaly:
+            title = f'🚨 ANOMALÍA DETECTADA 🚨\nPredicción: {pred_class} ({confidence:.1%})'
+            # Agregar borde rojo para anomalías
+            for spine in ax1.spines.values():
+                spine.set_edgecolor('red')
+                spine.set_linewidth(4)
+        else:
+            title = f'✅ NORMAL\nPredicción: {pred_class} ({confidence:.1%})'
+            # Borde verde para normal
+            for spine in ax1.spines.values():
+                spine.set_edgecolor('green')
+                spine.set_linewidth(2)
+        
+        ax1.set_title(title, fontsize=12, fontweight='bold')
         ax1.axis('off')
         
-        # 2. Probabilidades
-        classes = ['Healthy', 'SCD']
-        probs = [result['prediction']['probabilities']['Healthy'], result['prediction']['probabilities']['SCD']]
-        colors = ['lightblue' if result['prediction']['class'] == 'Healthy' else 'lightgray',
-                  'orange' if result['prediction']['class'] == 'SCD' else 'lightgray']
-        bars = ax2.bar(classes, probs, color=colors)
-        ax2.set_title('Probabilidades de Clase')
-        ax2.set_ylabel('Probabilidad')
-        ax2.set_ylim(0, 1)
+        # 2. Probabilidades con información de anomalía
+        if is_anomaly:
+            # Para anomalías, mostrar probabilidades con advertencia
+            classes = ['Healthy', 'SCD', 'Anomalía\nScore']
+            probs = [result['prediction']['probabilities']['Healthy'], 
+                    result['prediction']['probabilities']['SCD'],
+                    anomaly_info.get('anomaly_score', 1.0)]
+            colors = ['lightcoral' if result['prediction']['class'] == 'Healthy' else 'lightgray',
+                     'lightcoral' if result['prediction']['class'] == 'SCD' else 'lightgray',
+                     'red']
+            bars = ax2.bar(classes, probs, color=colors, alpha=0.8)
+            ax2.set_title('🚨 Probabilidades + Score Anomalía', fontweight='bold', color='red')
+            
+            # Añadir línea en score de anomalía = 1.0
+            ax2.axhline(y=1.0, color='red', linestyle='--', alpha=0.7, label='Score Máximo Anomalía')
+        else:
+            # Normal: solo probabilidades
+            classes = ['Healthy', 'SCD']
+            probs = [result['prediction']['probabilities']['Healthy'], result['prediction']['probabilities']['SCD']]
+            colors = ['lightblue' if result['prediction']['class'] == 'Healthy' else 'lightgray',
+                      'orange' if result['prediction']['class'] == 'SCD' else 'lightgray']
+            bars = ax2.bar(classes, probs, color=colors)
+            ax2.set_title('✅ Probabilidades de Clase', color='green')
+        
+        ax2.set_ylabel('Probabilidad / Score')
+        ax2.set_ylim(0, 1.1)
         
         # Añadir valores en las barras
         for bar, prob in zip(bars, probs):
             ax2.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.01,
-                    f'{prob:.3f}', ha='center', va='bottom')
+                    f'{prob:.3f}', ha='center', va='bottom', fontweight='bold')
         
         # 3. Top características por valor (siempre disponible)
         top_features = result['analysis']['top_discriminative_features'][:8]
@@ -1305,57 +1434,103 @@ class HologramAnalyzer:
             ax3.set_title('Características Seleccionadas')
             ax3.invert_yaxis()
         
-        # 4. Información del análisis (siempre útil)
-        # Mostrar distribución de tipos de características
-        feature_types = {}
-        for feat_name in result['features']['selected_feature_names']:
-            if feat_name.startswith('lbp_'):
-                feature_types['LBP'] = feature_types.get('LBP', 0) + 1
-            elif feat_name.startswith('glcm_'):
-                feature_types['GLCM'] = feature_types.get('GLCM', 0) + 1
-            elif feat_name.startswith('fft_'):
-                feature_types['FFT'] = feature_types.get('FFT', 0) + 1
-            elif feat_name.startswith('hu_'):
-                feature_types['Hu Moments'] = feature_types.get('Hu Moments', 0) + 1
-            elif feat_name.startswith('gabor_'):
-                feature_types['Gabor'] = feature_types.get('Gabor', 0) + 1
-            elif feat_name.startswith('wavelet_'):
-                feature_types['Wavelet'] = feature_types.get('Wavelet', 0) + 1
-            else:
-                feature_types['Morfológicas'] = feature_types.get('Morfológicas', 0) + 1
-        
-        if feature_types:
-            types = list(feature_types.keys())
-            counts = list(feature_types.values())
-            colors_pie = plt.cm.Set3(np.linspace(0, 1, len(types)))
+        # 4. Panel de información específica
+        if is_anomaly:
+            # Para anomalías: mostrar métricas de detección de anomalías
+            ax4.axis('off')  # Remover ejes para usar como panel de texto
             
-            wedges, texts, autotexts = ax4.pie(counts, labels=types, autopct='%1.1f%%', 
-                                             colors=colors_pie, startangle=90)
-            ax4.set_title('Distribución de Tipos de\nCaracterísticas Seleccionadas')
+            # Obtener métricas
+            mahal_dist = anomaly_info.get('mahalanobis_distance', 0)
+            threshold = anomaly_info.get('threshold', 0)
+            anomaly_score = anomaly_info.get('anomaly_score', 0)
+            p_value = anomaly_info.get('p_value', 0)
             
-            # Mejorar legibilidad
-            for autotext in autotexts:
-                autotext.set_color('white')
-                autotext.set_fontweight('bold')
+            # Texto de información de anomalía
+            anomaly_text = f"""🚨 INFORMACIÓN DE ANOMALÍA 🚨
+
+📏 Distancia de Mahalanobis: {mahal_dist:.2f}
+📐 Umbral de decisión: {threshold:.2f}
+📊 Score de anomalía: {anomaly_score:.3f}
+📈 P-value: {p_value:.2e}
+
+⚠️  Esta imagen está significativamente 
+    fuera del dominio de entrenamiento.
+    
+💡 El modelo fue entrenado con células 
+    sanguíneas. Esta imagen parece ser:
+    • Un organismo diferente
+    • Una preparación defectuosa
+    • Un artefacto de imagen
+    
+🔍 La predicción ({pred_class}) debe 
+    interpretarse con EXTREMA precaución."""
+            
+            ax4.text(0.05, 0.95, anomaly_text, transform=ax4.transAxes, 
+                    fontsize=10, verticalalignment='top', horizontalalignment='left',
+                    bbox=dict(boxstyle='round,pad=0.5', facecolor='mistyrose', 
+                             edgecolor='red', alpha=0.8))
+            ax4.set_title('🚨 ANÁLISIS DE ANOMALÍA 🚨', fontweight='bold', color='red', fontsize=12)
+            
         else:
-            # Fallback: mostrar estadísticas básicas
-            stats_data = {
-                'Total Extraídas': result['features']['total_extracted'],
-                'Seleccionadas': result['features']['total_selected'],
-                'Confianza %': int(result['prediction']['confidence'] * 100)
-            }
+            # Para casos normales: mostrar distribución de tipos de características
+            feature_types = {}
+            for feat_name in result['features']['selected_feature_names']:
+                if feat_name.startswith('lbp_'):
+                    feature_types['LBP'] = feature_types.get('LBP', 0) + 1
+                elif feat_name.startswith('glcm_'):
+                    feature_types['GLCM'] = feature_types.get('GLCM', 0) + 1
+                elif feat_name.startswith('fft_'):
+                    feature_types['FFT'] = feature_types.get('FFT', 0) + 1
+                elif feat_name.startswith('hu_'):
+                    feature_types['Hu Moments'] = feature_types.get('Hu Moments', 0) + 1
+                elif feat_name.startswith('gabor_'):
+                    feature_types['Gabor'] = feature_types.get('Gabor', 0) + 1
+                elif feat_name.startswith('wavelet_'):
+                    feature_types['Wavelet'] = feature_types.get('Wavelet', 0) + 1
+                else:
+                    feature_types['Morfológicas'] = feature_types.get('Morfológicas', 0) + 1
             
-            bars = ax4.bar(stats_data.keys(), stats_data.values(), 
-                          color=['lightcoral', 'lightgreen', 'gold'])
-            ax4.set_title('Estadísticas del Análisis')
-            ax4.set_ylabel('Cantidad / Porcentaje')
-            
-            # Añadir valores
-            for bar, value in zip(bars, stats_data.values()):
-                ax4.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 1,
-                        str(value), ha='center', va='bottom')
+            if feature_types:
+                types = list(feature_types.keys())
+                counts = list(feature_types.values())
+                colors_pie = plt.cm.Set2(np.linspace(0, 1, len(types)))
+                
+                wedges, texts, autotexts = ax4.pie(counts, labels=types, autopct='%1.1f%%', 
+                                                 colors=colors_pie, startangle=90)
+                ax4.set_title('✅ Distribución de Tipos de\nCaracterísticas Seleccionadas', color='green')
+                
+                # Mejorar legibilidad
+                for autotext in autotexts:
+                    autotext.set_color('white')
+                    autotext.set_fontweight('bold')
+            else:
+                # Fallback: mostrar estadísticas básicas
+                stats_data = {
+                    'Total Extraídas': result['features']['total_extracted'],
+                    'Seleccionadas': result['features']['total_selected'],
+                    'Confianza %': int(result['prediction']['confidence'] * 100)
+                }
+                
+                bars = ax4.bar(stats_data.keys(), stats_data.values(), 
+                              color=['lightcoral', 'lightgreen', 'gold'])
+                ax4.set_title('✅ Estadísticas del Análisis', color='green')
+                ax4.set_ylabel('Cantidad / Porcentaje')
+                
+                # Añadir valores
+                for bar, value in zip(bars, stats_data.values()):
+                    ax4.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 1,
+                            str(value), ha='center', va='bottom')
         
-        plt.suptitle(f'Análisis Completo: {os.path.basename(result["metadata"]["image_path"])}', fontsize=16)
+        # Título principal con indicador de anomalía
+        filename = os.path.basename(result["metadata"]["image_path"])
+        if is_anomaly:
+            main_title = f'🚨 ANÁLISIS DE ANOMALÍA: {filename} 🚨'
+            title_color = 'red'
+        else:
+            main_title = f'✅ ANÁLISIS NORMAL: {filename}'
+            title_color = 'green'
+            
+        plt.suptitle(main_title, fontsize=16, fontweight='bold', color=title_color)
         plt.tight_layout()
         
         # Guardar visualización
@@ -1368,14 +1543,21 @@ class HologramAnalyzer:
 
     def save_model(self, filename: str = None):
         """Guardar modelo entrenado"""
-        if 'model' not in self.results.get('training', {}):
+        # Check both possible locations for the model
+        model = None
+        if 'training' in self.results and 'model' in self.results['training']:
+            model = self.results['training']['model']
+        elif 'model' in self.results:
+            model = self.results['model']
+        
+        if model is None:
             print("❌ No hay modelo para guardar")
             return
         
         if filename is None:
             filename = f"{self.config['output_dir']}/hologram_model.pkl"
         
-        joblib.dump(self.results['training']['model'], filename)
+        joblib.dump(model, filename)
         print(f"✅ Modelo guardado en: {filename}")
 
 def main():

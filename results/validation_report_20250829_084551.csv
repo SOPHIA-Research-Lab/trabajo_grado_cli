@@ -1,0 +1,10 @@
+category,image,prediction,confidence,is_anomaly,anomaly_score,mahalanobis_distance,threshold,p_value,path
+8_Poaceae,17.jpg,SCD,0.8960917037822804,True,1.0,88.85703300206418,9.89381945871691,0.0,holograms/8_Poaceae/17.jpg
+8_Poaceae,10.jpg,SCD,0.7102635086616462,True,1.0,90.15168072682579,9.89381945871691,0.0,holograms/8_Poaceae/10.jpg
+8_Poaceae,11.jpg,SCD,0.8255465997326195,True,1.0,84.52491918662076,9.89381945871691,0.0,holograms/8_Poaceae/11.jpg
+2_Aspergillus,10.jpg,SCD,0.5394534319158831,True,1.0,136.6035876828236,9.89381945871691,0.0,holograms/2_Aspergillus/10.jpg
+2_Aspergillus,11.jpg,SCD,0.6235479394462673,True,1.0,144.56923374115757,9.89381945871691,0.0,holograms/2_Aspergillus/11.jpg
+2_Aspergillus,12.jpg,Healthy,0.5080323660660533,True,1.0,152.61952527103455,9.89381945871691,0.0,holograms/2_Aspergillus/12.jpg
+3_Diatom,10.jpg,SCD,0.9283547840031814,True,1.0,112.10013048338283,9.89381945871691,0.0,holograms/3_Diatom/10.jpg
+3_Diatom,11.jpg,SCD,0.8767395582639522,True,1.0,120.66185963164932,9.89381945871691,0.0,holograms/3_Diatom/11.jpg
+3_Diatom,12.jpg,SCD,0.9146574526558666,True,1.0,107.62533350059793,9.89381945871691,0.0,holograms/3_Diatom/12.jpg

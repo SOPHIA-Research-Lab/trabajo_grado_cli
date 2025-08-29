@@ -38,3 +38,9 @@ visualization:
   include_interpretability: true
   save_plots: true
   show_top_features: 10
+anomaly_detection:
+  enabled: true
+  algorithm: "mahalanobis"
+  threshold_percentile: 95.0
+  auto_create: true
+  save_path: "anomaly_detector.pkl"

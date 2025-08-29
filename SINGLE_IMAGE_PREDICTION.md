@@ -1,6 +1,6 @@
-# 🔍 Predicción de Imagen Individual
+# 🔍 Predicción de Imagen Individual con Detección de Anomalías
 
-Guía rápida para analizar una sola imagen con el modelo entrenado.
+Guía rápida para analizar una sola imagen con el modelo entrenado, incluyendo detección automática de anomalías.
 
 ## 🚀 Uso Rápido
 

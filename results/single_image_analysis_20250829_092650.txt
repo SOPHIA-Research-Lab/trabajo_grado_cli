@@ -1,15 +1,15 @@
 ================================================================================
 ANÁLISIS INDIVIDUAL DE IMAGEN - HOLOGRAM CLASSIFIER V2.0
 ================================================================================
-Fecha: 2025-08-25 11:07:15
-Imagen: /home/santiago/Documents/GitHub/trabajo_grado_v2/data/dataset_2/SCD-RBC/SCD_Phase_P1_2holo.png
+Fecha: 2025-08-29 09:26:50
+Imagen: /home/santiago/Documents/GitHub/trabajo_grado_v2/holograms/2_Aspergillus/2.jpg
 
 PREDICCIÓN
 ----------------------------------------
 Clase predicha: SCD
-Confianza: 99.1%
-Probabilidad Healthy: 0.009
-Probabilidad SCD: 0.991
+Confianza: 75.5%
+Probabilidad Healthy: 0.245
+Probabilidad SCD: 0.755
 
 ANÁLISIS DE CARACTERÍSTICAS
 ----------------------------------------
@@ -18,13 +18,13 @@ Características seleccionadas por modelo: 50
 
 TOP 15 CARACTERÍSTICAS MÁS DISCRIMINATIVAS
 ----------------------------------------
- 1. lbp_hist_0: 0.0521
- 2. lbp_hist_1: 0.0136
- 3. lbp_hist_2: 0.0172
- 4. lbp_hist_4: 0.0254
- 5. lbp_hist_5: 0.0281
- 6. lbp_hist_6: 0.0284
- 7. lbp_hist_7: 0.0305
- 8. lbp_hist_8: 0.0307
- 9. lbp_hist_9: 0.0313
-10. lbp_hist_10: 0.0323
+ 1. lbp_hist_0: 0.0794
+ 2. lbp_hist_1: 0.0504
+ 3. lbp_hist_2: 0.0163
+ 4. lbp_hist_4: 0.0035
+ 5. lbp_hist_5: 0.0022
+ 6. lbp_hist_6: 0.0019
+ 7. lbp_hist_7: 0.0019
+ 8. lbp_hist_8: 0.0021
+ 9. lbp_hist_9: 0.0024
+10. lbp_hist_10: 0.0032
