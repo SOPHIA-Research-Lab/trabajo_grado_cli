@@ -192,23 +192,6 @@ python cli.py analyze --mode deep
 
 ---
 
-## 📊 **EJEMPLOS DE FLUJOS DE TRABAJO**
-
-### **🔥 Desarrollo Rápido**
-```bash
-# 1. Verificar dataset
-python cli.py info --dataset
-
-# 2. Análisis rápido
-python cli.py analyze --mode quick
-
-# 3. Ver cache generado
-python cli.py cache --info
-```
-
-
----
-
 ## 🆘 **COMANDOS DE AYUDA**
 
 ### **Ayuda General**
