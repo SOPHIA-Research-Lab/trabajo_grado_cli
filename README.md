@@ -164,44 +164,6 @@ python cli.py config --mode deep       # Cambiar modo por defecto
 python cli.py config --features 40     # Cambiar número de características
 ```
 
-## 📚 Documentación
-
-- 📄 [**SINGLE_IMAGE_PREDICTION.md**](SINGLE_IMAGE_PREDICTION.md) - Análisis de imágenes individuales
-- 🚨 [**ANOMALY_DETECTION.md**](ANOMALY_DETECTION.md) - Guía completa de detección de anomalías
-- 💻 [**CLI_GUIDE.md**](CLI_GUIDE.md) - Referencia completa del CLI
-- 🔧 [**COMMANDS.md**](COMMANDS.md) - Lista de comandos disponibles
-
-## 🔬 Casos de Uso
-
-### 1. Diagnóstico Clínico
-```python
-# Analizar muestra de paciente
-result = analyzer.predict_single_image("muestra_paciente.jpg")
-
-if result['anomaly_detection']['is_anomaly']:
-    print("⚠️ Muestra anómala - verificar preparación")
-else:
-    diagnosis = result['prediction']['class']
-    confidence = result['prediction']['confidence']
-    print(f"Diagnóstico: {diagnosis} (confianza: {confidence:.1%})")
-```
-
-### 2. Control de Calidad
-```bash
-# Validar lote de muestras
-python cli.py validate --image-dir ./lote_muestras --save-report
-```
-
-### 3. Investigación
-```python
-# Analizar características discriminativas
-result = analyzer.predict_single_image("muestra.jpg")
-top_features = result['analysis']['top_discriminative_features']
-
-for feature in top_features[:5]:
-    print(f"{feature['name']}: {feature['discriminative_power']:.3f}")
-```
-
 ## 📈 Configuración
 
 ### config.yaml (Principal)
