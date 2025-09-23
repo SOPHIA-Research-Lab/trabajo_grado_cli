@@ -1,0 +1,462 @@
+%===========================================================
+% Capítulo: Metodología (I) — Datos, curaduría, preprocesamiento y extracción de muestras
+%===========================================================
+\chapter{Metodología}
+\label{chap:metodologia}
+
+\section{Diseño general}
+El objetivo metodológico es construir un \emph{pipeline} reproducible y estadísticamente honesto para clasificar \textbf{hologramas crudos} de eritrocitos (LDHM en línea) sin reconstrucción explícita. El flujo se compone de: (1) \textbf{curaduría y partición} del conjunto de datos (evitando fugas), (2) \textbf{preprocesamiento} con normalización por percentiles y \emph{CLAHE} para estabilizar SNR y microcontraste \cite{Zhou2019MedImageContrast}, (3) \textbf{muestreo} del holograma en ventanas/paches consistentes con el modelo óptico (Sec.~\ref{chap:marco}), (4) \textbf{extracción de rasgos} físico–estadísticos (LBP, GLCM, FFT) \cite{Kiani2022TextureSurvey,Chen2022Photonics}, y (5) \textbf{validación cruzada anidada} para selección honesta de hiperparámetros y estimación del desempeño con IC95\% \cite{Tsamardinos2022Patterns}. En esta primera parte describimos (1)--(3) con detalle; la segunda parte (próximo bloque) cubrirá (4)--(5), modelos, calibración y análisis de sensibilidad.
+
+%-----------------------------------------------------------
+\section{Datos, etiquetas y granularidad}
+\subsection{Unidades estadísticas}
+Definimos la unidad primaria como \textbf{slide} o \textbf{adquisición} LDHM por sujeto. Si el sensor registra mosaicos/campos múltiples, cada campo pertenece inequívocamente a un \emph{slide} (o sujeto). Para evitar \textbf{data leakage}, las particiones de validación (pliegues externos) se realizan a nivel de \textbf{sujeto/slide}, nunca mezclando vistas del mismo sujeto entre entrenamiento y prueba.
+
+\subsection{Etiquetas (ground truth)}
+Cada \emph{slide} se etiqueta como \texttt{sano} (0) o \texttt{AF} (1) con base en diagnóstico confirmatorio (HPLC/electroforesis) o criterio experto. Si el etiquetado es por \emph{célula}, se induce una etiqueta a nivel de \emph{parche} por mayoría/umbral, manteniendo una máscara de confianza (p.~ej., probabilidad de pertenencia).
+
+\subsection{Balance y prevalencia}
+Sea $N_1$ el número de \texttt{AF} y $N_0$ el de \texttt{sanos}; la prevalencia empírica es $\hat{\pi}=N_1/(N_0+N_1)$. En escenarios de cribado, $\pi$ real suele ser baja; por ello, además de \emph{accuracy}, se reporta \textbf{AUPRC} y \textbf{exactitud balanceada}. En entrenamiento, se aplica \textbf{ponderación por clase} o \emph{class\_weight={balanced}} para contrarrestar el desbalance (Sec.~\ref{subsec:modelado}).
+
+%-----------------------------------------------------------
+\section{Curaduría y control de calidad (QC)}
+\subsection{Criterios de exclusión}
+Se excluyen campos con: (i) saturación global ($>2\%$ de píxeles a 0 o máximo), (ii) áreas borrosas por desenfoque severo (medido por varianza del Laplaciano $<\tau_\mathrm{blur}$), (iii) artefactos extensos (burbujas, polvo) que ocupen $>10\%$ del área, y (iv) exposición anómala (media o varianza fuera de 3 DE de la cohorte).
+
+\subsection{Homogeneización de intensidad}
+Todas las imágenes se convierten a escala de grises \texttt{float32} en $[0,1]$. Para sensores de 10/12 bits se normaliza por $2^b-1$. Se guarda la \emph{metadata} (tamaño de píxel $p$, $\lambda$, $z$ si está disponible) para auditoría posterior.
+
+\subsection{Particionado honesto}
+Dividimos en $K_\text{out}$ pliegues externos \textbf{estratificados por sujeto} (manteniendo proporciones de clases) con semillas fijas. El conjunto de prueba externo $S_t$ (pliegue $t$) no interviene en ningún ajuste de hiperparámetros ni umbrales. Internamente, en $\mathcal{T}_t$ se realiza la selección de hiperparámetros con $K_\text{in}$ pliegues.
+
+%-----------------------------------------------------------
+\section{Preprocesamiento}
+\label{sec:preproc}
+
+\subsection{Normalización por percentiles}
+Sea $x$ el holograma (matriz $M\times N$). Calculamos percentiles $p_1$ y $p_{99}$; definimos
+\begin{equation}
+x'=\mathrm{clip}\!\left(\frac{x-p_1}{p_{99}-p_1+\epsilon},\,0,\,1\right),\qquad \epsilon=10^{-6}.
+\end{equation}
+Esta transformación estabiliza rango dinámico, reduce influencia de outliers y respeta \emph{monotonicidad} de intensidades.
+
+\subsection{CLAHE (ecualización adaptativa limitada)}
+Aplicamos \emph{Contrast-Limited Adaptive Histogram Equalization} con tamaño de tesela $T\times T$ y \emph{clip-limit} $c$ \cite{Zhou2019MedImageContrast}. Sea $H_t$ el histograma local en la tesela $t$ (normalizado, $L$ niveles). CLAHE recorta cada bin $H_t[i]$ a $H^\star_t[i]=\min(H_t[i],c/L)$, redistribuye el exceso uniformemente y mapea intensidades por CDF local. En la frontera entre teselas se interpola bilinealmente para evitar discontinuidades. Elegimos $(T,c)$ por \emph{validación interna} (grid pequeño) optimizando AUC en entrenamiento. CLAHE mejora microcontraste de \emph{franjas débiles} (SNR bajo) sin saturar altas luces.
+
+\subsection{Estandarización \emph{z}-score por imagen}
+Para rasgos sensibles a escala (GLCM, FFT), centramos y escalamos:
+\begin{equation}
+\tilde{x}=\frac{x'-\mu(x')}{\sigma(x')+\epsilon}.
+\end{equation}
+La media $\mu$ y DE $\sigma$ se calculan \emph{por imagen} (o por parche), preservando contrastes relativos.
+
+\subsection{Cuantización para GLCM}
+Para construir GLCM robustas, cuantizamos $\tilde{x}$ a $L$ niveles (p.\,ej., $L=64$):
+\[
+q(u,v)=\big\lfloor L\cdot \mathrm{clip}\left(\frac{\tilde{x}(u,v)-\alpha}{\beta-\alpha},0,1\right)\big\rfloor,
+\]
+con $(\alpha,\beta)$ percentiles (p.\,ej., 1 y 99) precomputados en entrenamiento. Esto reduce sensibilidad a ruido fino y hace densa la co-ocurrencia \cite{Kiani2022TextureSurvey}.
+
+\subsection{Filtrado opcional de alta frecuencia}
+En casos de ruido de lectura alto, un suavizado gaussiano ligero ($\sigma\le 0.5$ píxeles) puede ser útil \emph{antes} de LBP para evitar códigos erráticos. Se evalúa su impacto en la CV interna (control de sobre-suavizado).
+
+%-----------------------------------------------------------
+\section{Estrategias de muestreo del holograma}
+\label{sec:muestras}
+
+\subsection{Parches centrados en celdas \emph{vs.} rejilla uniforme}
+Dos estrategias son posibles:
+\begin{enumerate}
+\item \textbf{Centrado en célula:} localizar centroides aproximados de celdas (por máximos locales, filtro LoG o detector de picos) y extraer ventanas $w\times w$ centradas. Es más \emph{semántico}, pero introduce sesgos si el detector falla en AF (células atípicas).
+\item \textbf{Rejilla uniforme:} muestrear una grilla densa de parches no superpuestos (o con solape limitado) sobre la región válida del holograma. Es \emph{agnóstico} y reproducible; a costa de incluir parches sin célula (que se pueden filtrar por energía espectral mínima).
+\end{enumerate}
+Usamos rejilla uniforme como \textbf{baseline} por reproducibilidad y ausencia de heurísticas de segmentación. Un filtro rápido descarta parches con energía \emph{total} $E=\sum |X|^2$ por debajo de un umbral $\tau_E$ (percentil bajo del entrenamiento), evitando ventanas triviales.
+
+\subsection{Tamaño de parche y consistencia óptica}
+El tamaño $w$ se elige de modo que cubra \emph{varias franjas} alrededor del máximo central del patrón típico de una célula. Si el diámetro eritrocitario proyectado es $D$ píxeles, un rango útil es $w\in[1.2D,1.8D]$. Como $D$ varía con $\lambda$, $z$ y $p$, definimos $w$ en \emph{fracción de campo} (p.\,ej., $w=\lfloor \eta\min(M,N)\rfloor$ con $\eta\in[0.05,0.12]$) y verificamos por CV interna.
+
+\subsection{No-leakage por sujeto}
+Los índices de parches heredan la partición por \emph{sujeto/slide}. Si $(i,j)$ proviene del slide $s$, entonces $(i,j)\in \mathcal{T}_t$ o $(i,j)\in \mathcal{S}_t$ según $s$. Nunca se mezclan parches del mismo $s$ entre entrenamiento y prueba externa.
+
+\subsection{Augmentaciones conservadoras}
+Para mejorar invariancia a rotaciones discretas y pequeñas traslaciones, aplicamos augmentaciones \emph{dentro del pliegue de entrenamiento}:
+\begin{itemize}
+\item Rotaciones por múltiplos de $90^\circ$ (conserva rejilla).
+\item Reflejos horizontal/vertical (si la física de adquisición no induce asimetría direccional sistemática).
+\item Traslaciones $\le 2$ píxeles (wrapping) para robustez a centrado.
+\end{itemize}
+\textbf{No} aplicamos escalados arbitrarios (alteran la escala de franjas) ni deformaciones elásticas (no físicas) en el enfoque de rasgos. En la comparación con CNN (baseline) se pueden usar augmentaciones fotométricas suaves (gamma jitter) y recortes aleatorios, reportando por separado.
+
+%-----------------------------------------------------------
+\section{Definición operativa de SNR y métricas de QC}
+\subsection{Estimación de SNR local en franjas}
+Definimos una banda anular $B=[k_a,k_b]$ (fracción de Nyquist) que captura el primer lóbulo espectral del patrón celular. La \emph{SNR espectral} local se estima como
+\begin{equation}
+\mathrm{SNR}_B = \frac{\mu_B}{\sigma_{\bar{B}}+\epsilon},\qquad 
+\mu_B=\frac{1}{|B|}\sum_{k_\rho\in B} P_{\mathrm{rad}}(k_\rho),\quad
+\sigma_{\bar{B}}=\mathrm{std}\big(P_{\mathrm{rad}}(k_\rho)\,;\, k_\rho\notin B\big),
+\end{equation}
+donde $P_{\mathrm{rad}}$ es el perfil radial (Sec.~\ref{subsec:fft}). Esta SNR se usa para \emph{filtrar parches} en entrenamiento (descartar \emph{muy} ruidosos) y como covariable de análisis de errores.
+
+\subsection{Criterios de aceptación de parches}
+Un parche se acepta si: (i) $E>\tau_E$ (energía total), (ii) $\mathrm{SNR}_B>\tau_\mathrm{SNR}$, y (iii) no presenta saturación local ($<1\%$ de píxeles en 0 o 1). Los umbrales se fijan en entrenamiento por percentiles (p.\,ej., $p5$ para energía y $p10$ para SNR) para \emph{no} sesgar la muestra.
+
+%-----------------------------------------------------------
+\section{Implementación y reproducibilidad}
+\subsection{Encapsulamiento del pipeline}
+Toda la cadena se implementa como \texttt{sklearn.Pipeline} con pasos puros y aleatoriedad controlada:
+\begin{enumerate}
+\item \texttt{PercentileNormalizer(1,99)}
+\item \texttt{CLAHE(clip=c, tile=T)}
+\item \texttt{StandardScaler(by='image')}
+\item \texttt{PatchSampler(w, stride, energy\_filter, snr\_filter)}
+\item \texttt{FeatureExtractor(LBP, GLCM, FFT, Anisotropy)}
+\end{enumerate}
+La búsqueda de hiperparámetros ajusta $(c,T)$, $w$, \emph{stride}, parámetros LBP $(P,R)$, GLCM $(L,d,\theta)$ y bandas FFT, junto con hiperparámetros del clasificador (Sec.~\ref{subsec:modelado}).
+
+\subsection{Control de versiones y trazabilidad}
+Se registran: semillas, versiones de librerías, hashes de datos, configuración de particiones, métricas por pliegue, curvas ROC/PR y \emph{calibración}. Se almacenan modelos/transformaciones finales (\texttt{joblib}) por pliegue externo, y \emph{predicciones out-of-fold} para IC/bootstrapping.
+
+%-----------------------------------------------------------
+\section{Pseudocódigo de la etapa de datos $\to$ parches}
+\noindent\textbf{Listados sugeridos} (del repositorio \texttt{hologram\_classifier\_v2}):
+\begin{itemize}
+\item \texttt{preprocessing\_pipeline.py} (percentiles, CLAHE, estandarización).
+\item \texttt{patch\_sampler.py} (rejilla/centroide, filtros $E$ y SNR).
+\end{itemize}
+
+\noindent\textbf{Ejemplo (CLAHE + muestreo de parches):}
+\begin{minted}[fontsize=\small]{python}
+import cv2, numpy as np
+
+def normalize_percentiles(img, p1=1, p99=99):
+    lo, hi = np.percentile(img, [p1, p99])
+    img = (img - lo) / (hi - lo + 1e-6)
+    return np.clip(img, 0, 1).astype(np.float32)
+
+def apply_clahe(img, clip=2.0, tile=8):
+    img8 = (np.clip(img,0,1)*255).astype(np.uint8)
+    clahe = cv2.createCLAHE(clipLimit=clip, tileGridSize=(tile,tile))
+    eq = clahe.apply(img8)
+    return (eq/255.0).astype(np.float32)
+
+def sample_patches(img, w=96, stride=96, energy_p=5, snr_p=10):
+    h, wimg = img.shape
+    patches = []
+    # precompute energy threshold using global FFT
+    F = np.fft.fftshift(np.fft.fft2(img))
+    E = np.abs(F)**2
+    E_th = np.percentile(E, energy_p)
+    for y in range(0, h-w+1, stride):
+        for x in range(0, wimg-w+1, stride):
+            P = img[y:y+w, x:x+w]
+            # energy & SNR checks (simple proxies)
+            Fp = np.fft.fftshift(np.fft.fft2(P))
+            Ep = (np.abs(Fp)**2).mean()
+            snr = P.std() / (1e-6 + np.abs(P.mean()))
+            if Ep > E_th and snr > 0.1:
+                patches.append(P)
+    return np.stack(patches) if patches else np.empty((0,w,w), np.float32)
+\end{minted}
+
+%-----------------------------------------------------------
+\section{Discusión metodológica (parte I)}
+\paragraph{Consistencia física.} El preprocesamiento favorece la \emph{estructura interferométrica}: percentiles descartan colas extremas; CLAHE amplifica microcontraste de franjas; la estandarización facilita que descriptores (LBP/GLCM/FFT) respondan a \emph{patrones} y no a offsets/ganancias. El muestreo por rejilla evita sesgos de detectores de célula y preserva la estadística del campo (producto espacio–banda, Sec.~\ref{chap:marco}).
+
+\paragraph{Consistencia estadística.} Las decisiones (tamaño de parche, filtros de energía/SNR) se fijan \emph{exclusivamente} en entrenamiento dentro de cada pliegue para evitar fugas. La granularidad por sujeto controla correlaciones intra-slide; las predicciones \emph{out-of-fold} agregadas permiten estimar AUC/AUPRC e IC95\% \emph{sin optimismo} \cite{Tsamardinos2022Patterns}.
+
+\paragraph{Limitaciones y mitigaciones.} La rejilla puede incluir parches sin célula; se mitiga con filtros de energía/SNR. Cambios en $z$ o $p$ alteran la escala de franjas; la segunda parte definirá rasgos \emph{en fracción de Nyquist} y multiescala (LBP/GLCM) para robustez \cite{Chen2022Photonics}.
+
+%===========================================================
+% Próximo bloque (Metodología II):
+%   - Extracción de rasgos detallada (LBP/GLCM/FFT/Anisotropía),
+%   - Selección/regularización,
+%   - Modelado (LR, SVM-RBF, RF, baseline CNN),
+%   - Validación cruzada anidada, IC95% (bootstrap),
+%   - Calibración, umbrales por costo clínico,
+%   - Ablaciones y análisis de sensibilidad/robustez.
+%===========================================================
+
+%===========================================================
+% Capítulo: Metodología (II) — Extracción de rasgos, agregación, modelado, validación y calibración
+%===========================================================
+
+\section{Extracción detallada de rasgos físico–estadísticos}
+\label{sec:features}
+
+\subsection{Resumen del conjunto de rasgos}
+A cada parche $x\in\mathbb{R}^{w\times w}$ preprocesado (Sec.~\ref{sec:preproc}) le extraemos un vector
+\[
+\phi(x)=\big[\underbrace{\phi_{\text{LBP}}}_{d_1},\ 
+\underbrace{\phi_{\text{GLCM}}}_{d_2},\ 
+\underbrace{\phi_{\text{FFT}}}_{d_3},\
+\underbrace{\phi_{\text{ANI}}}_{d_4}\big]\in\mathbb{R}^{d},\quad d=d_1+d_2+d_3+d_4,
+\]
+donde:
+\begin{itemize}
+\item $\phi_{\text{LBP}}$: histogramas LBP \emph{uniformes} multiescala con momentos (energía, entropía, contraste), Sec.~\ref{subsec:lbp}.
+\item $\phi_{\text{GLCM}}$: promedios de \emph{energía}, \emph{contraste}, \emph{homogeneidad}, \emph{correlación}, \emph{entropía} sobre $d\in\{1,2,4\}$ y $\theta\in\{0^\circ,45^\circ,90^\circ,135^\circ\}$, Sec.~\ref{subsec:glcm}.
+\item $\phi_{\text{FFT}}$: perfil radial $P_{\mathrm{rad}}(k_\rho)$ (bins log-espaciados en fracción de Nyquist), posiciones/amplitudes de picos $(k_1,k_2)$, energías por banda $E_\text{lo},E_\text{mi},E_\text{hi}$ y razón $R_{HL}=E_\text{hi}/E_\text{lo}$; pendiente espectral en banda inercial, Sec.~\ref{subsec:fft}.
+\item $\phi_{\text{ANI}}$: anisotropía angular $\mathrm{ANI}=\mathrm{Var}_\varphi(A(\varphi))/\mathbb{E}_\varphi[A(\varphi)]^2$ y magnitudes de modos angulares $m\in\{2,4\}$ del espectro (indicadores de elipticidad/direccionalidad), Sec.~\ref{subsec:fft}.
+\end{itemize}
+Todos los rasgos de frecuencia se definen respecto a $k_\mathrm{NQ}=\pi/p$ (Nyquist), lo que reduce la dependencia del tamaño de píxel $p$ y favorece la \emph{transferibilidad} entre sensores \cite{Chen2022Photonics}.
+
+\subsection{Cómputo del perfil radial y picos espectrales}
+Sea $X=\mathrm{fftshift}(\mathcal{F}\{x\})$, $S=|X|^2$. Para cada bin radial $B_r=\{(k,\ell): r-\Delta r/2\le \sqrt{k^2+\ell^2}<r+\Delta r/2\}$ definimos
+\begin{equation}
+P_{\mathrm{rad}}(r)=\frac{1}{|B_r|}\sum_{(k,\ell)\in B_r}S(k,\ell),\qquad r\in\mathcal{R},
+\end{equation}
+donde $\mathcal{R}$ es una rejilla logarítmica en $[r_{\min},r_{\max}]\subset(0,k_\mathrm{NQ})$. Los picos $(k_1,k_2)$ se obtienen como máximos locales de $P_{\mathrm{rad}}$ tras un suavizado leve (mediana o Savitzky–Golay). La energía por bandas es $E_B=\sum_{r\in B}P_{\mathrm{rad}}(r)$ con $B_{\text{lo}},B_{\text{mi}},B_{\text{hi}}$ disjuntas. 
+
+\paragraph{Pendiente espectral.} Ajustamos por MCO la recta $y=a+b\,x$ a $(x,y)=\big(\log r,\log P_{\mathrm{rad}}(r)\big)$ en una banda intermedia libre de picos instrumentales. Un $b$ menos negativo sugiere \emph{mayor} peso de altas frecuencias (hipótesis H1).
+
+\subsection{Anisotropía angular}
+Para cada anillo $B$ (típicamente el que contiene $k_1$) definimos $A(\varphi)=\sum_{(r,\theta)\in B,\ \angle=\varphi}S(r,\theta)$. Se computa 
+\[
+\mathrm{ANI}=\frac{\mathrm{Var}_\varphi(A(\varphi))}{\big(\mathbb{E}_\varphi[A(\varphi)]\big)^2},
+\quad
+M_m=\left|\sum_{\varphi} A(\varphi)\,e^{-im\varphi}\right|,
+\]
+con $m\in\{2,4\}$. Eritrocitos elongados tienden a presentar $\mathrm{ANI}$ y $M_2$ superiores \emph{independientemente} de la fase angular (rot-invariante).
+
+\subsection{Textura LBP multiescala}
+Usamos LBP uniforme con $(P,R)\in\{(8,1),(16,2),(24,3)\}$ y concatenamos histogramas normalizados $h^{(P,R)}[k]$ más sus momentos $E_\text{LBP}$, $H_\text{LBP}$ y $C_\text{LBP}$ (Sec.~\ref{subsec:lbp}). En AF esperamos $H_\text{LBP}\!\uparrow$ y $C_\text{LBP}\!\uparrow$ (H2).
+
+\subsection{Co-ocurrencia GLCM}
+Cuantizamos a $L=64$ niveles sobre percentiles (1,99) del entrenamiento. Para cada $d\in\{1,2,4\}$ y $\theta\in\{0^\circ,45^\circ,90^\circ,135^\circ\}$ calculamos $\mathrm{ENE},\mathrm{CON},\mathrm{HOM},\mathrm{COR},\mathrm{ENT}$ y promediamos en $(d,\theta)$. En AF: $\mathrm{CON}\!\uparrow$, $\mathrm{ENT}\!\uparrow$, $\mathrm{HOM}\!\downarrow$ (H2) \cite{Kiani2022TextureSurvey}.
+
+\subsection{Estandarización de rasgos y control de escala}
+Sea $\mathbf{z}\in\mathbb{R}^d$ el vector de rasgos crudo. Estandarizamos \emph{por pliegue} con media y desviación del entrenamiento:
+\[
+\tilde{\mathbf{z}}=\frac{\mathbf{z}-\boldsymbol{\mu}_\text{train}}{\boldsymbol{\sigma}_\text{train}+\epsilon}.
+\]
+Esta normalización es esencial para SVM/LR y para que importancias/SHAP sean comparables entre rasgos. 
+
+%-----------------------------------------------------------
+\section{Agregación parche $\rightarrow$ slide / sujeto}
+\label{sec:agg}
+
+En inferencia clínica, la decisión ocurre a nivel de \textbf{sujeto} (o \textbf{slide}). Si para un sujeto $s$ tenemos parches $\{x_{s,1},\dots,x_{s,n_s}\}$ y sus puntajes $s_{s,i}=f_\theta(\phi(x_{s,i}))\in[0,1]$, definimos agregadores:
+\begin{align}
+\text{Media:}\quad & \hat{p}_s=\frac{1}{n_s}\sum_{i=1}^{n_s} s_{s,i},\\
+\text{Cuantil-$q$:}\quad & \hat{p}_s=Q_q\big(\{s_{s,i}\}\big),\ \ q\in[0.5,0.9],\\
+\text{Softmax-$\beta$:}\quad & \hat{p}_s=\frac{\sum_i s_{s,i}^\beta}{\sum_i s_{s,i}^{\beta-1} + \delta},\ \beta>1,\\
+\text{Logit-mean:}\quad & \hat{p}_s=\sigma\!\left(\frac{1}{n_s}\sum_{i}\mathrm{logit}(s_{s,i})\right),
+\end{align}
+donde $\sigma$ es la sigmoide y $\delta$ evita división por cero. El \emph{logit-mean} estabiliza saturaciones; \emph{softmax-$\beta$} aproxima \emph{max} suave cuando $\beta$ crece, útil si basta \emph{algunos} parches positivos para indicar AF. La selección del agregador se fija \emph{dentro} de la CV interna (hiperparámetro), evaluándose siempre el rendimiento \emph{a nivel de sujeto} en los pliegues externos (estratificación por sujeto), evitando \emph{inflación} por múltiples parches correlacionados.
+
+%-----------------------------------------------------------
+\section{Selección de rasgos, parquedad y regularización}
+\label{sec:feature_selection}
+
+\subsection{Filtro univariante con control de FDR}
+En el conjunto de entrenamiento interno, contrastamos H1–H2 para cada rasgo (Welch $t$ o Mann–Whitney) y calculamos tamaños de efecto (Cohen $d$ o Cliff $\delta$). Aplicamos corrección FDR (Benjamini–Hochberg, $q\le 0.10$) y retenemos un \emph{pool} de rasgos informativos. Esto acelera la búsqueda, pero el rendimiento se evalúa siempre de forma anidada para evitar optimismo \cite{Tsamardinos2022Patterns}.
+
+\subsection{RFE / Importancias por permutación}
+Con el clasificador candidato (SVM o RF) entrenado en la CV interna, aplicamos:
+\begin{itemize}
+\item \textbf{Importancias por permutación}: decrecimiento de AUC al permutar cada rasgo (más honesto que impureza).
+\item \textbf{RFE} (Recursive Feature Elimination): eliminar iterativamente rasgos de baja importancia hasta un tamaño objetivo ($k\in\{10,20,40\}$).
+\end{itemize}
+La hipótesis H4 postula que un subconjunto $\le 10$ rasgos preserva AUC ($\Delta\text{AUC}\le 0.02$).
+
+%-----------------------------------------------------------
+\section{Modelado}
+\label{subsec:modelado}
+
+\subsection{Logistic Regression (LR-$\ell_2$)}
+Probabilidad $P(y{=}1|\mathbf{z})=\sigma(\mathbf{w}^\top \mathbf{z}+b)$ con regularización $\ell_2$ (hiperparámetro $C$). Interpretación directa de coeficientes (odds-ratios) y \emph{calibración} típicamente buena tras \emph{Platt/Isotonic}.
+
+\subsection{SVM con kernel RBF}
+Núcleo $K(\mathbf{z},\mathbf{z}')=\exp(-\gamma\|\mathbf{z}-\mathbf{z}'\|_2^2)$; búsqueda en $(C,\gamma)$ sobre rejilla logarítmica. Para probabilidades, calibración posterior (sigmoide). Buena opción en fronteras no lineales con pocos rasgos \cite{Tsamardinos2022Patterns}.
+
+\subsection{Random Forest (RF)}
+Con $n_\text{trees}\in[200,500]$, \emph{max\_depth} moderada y \emph{max\_features} en $\sqrt{d}$ o $d/3$. Importancias por \emph{permutación} y OOB para chequeos rápidos. Robusto a interacciones, útil como \emph{modelo de referencia}.
+
+\subsection{CNN ligera (baseline)}
+MobileNetV3-S o EfficientNet-B0 sobre parches reescalados a $128\times128$; congelar capas iniciales y afinar bloque superior. Optimizar con \emph{cosine decay}, \emph{label smoothing} y \emph{focal loss} si hay desbalance. Se usa exclusivamente como comparación (menos interpretable con $N$ modesto) \cite{Alzubaidi2020Electronics}.
+
+\subsection{Grillas de hiperparámetros}
+\noindent\textbf{Ejemplo} (CV interna, estratificada por sujeto):
+\begin{itemize}
+\item \textbf{SVM-RBF}: $C\in\{0.1,1,10,100\}$, $\gamma\in\{10^{-3},10^{-2},10^{-1},1\}$.
+\item \textbf{RF}: $n\_estimators\in[200,500]$, \emph{max\_depth}$\in\{6,10,14\}$, \emph{max\_features}$\in\{\sqrt{d}, d/3\}$.
+\item \textbf{LR}: $C\in\{0.1,1,10\}$, \emph{penalty}=$\ell_2$.
+\item \textbf{Agregador}: media / logit-mean / softmax-$\beta$ con $\beta\in\{2,4\}$.
+\end{itemize}
+
+%-----------------------------------------------------------
+\section{Validación cruzada anidada y estimación con IC}
+\label{sec:nested_full}
+
+\subsection{Esquema GroupKFold (por sujeto/slide)}
+Usamos $K_\text{out}=5$ pliegues externos con \texttt{GroupKFold} (grupos=sujeto). Para cada $t$:
+\begin{enumerate}
+\item Separar grupos en $\mathcal{T}_t$ (train) y $\mathcal{S}_t$ (test externo).
+\item En $\mathcal{T}_t$, ejecutar CV interna (\texttt{GridSearchCV} con \texttt{GroupKFold} $K_\text{in}=4$) para seleccionar hiperparámetros maximizando AUC a nivel \emph{de sujeto} (usando el agregador elegido).
+\item Ajustar el modelo definitivo en $\mathcal{T}_t$ y predecir puntajes en $\mathcal{S}_t$ (nivel de parche y luego agregar a sujeto).
+\end{enumerate}
+Concatenamos todas las predicciones de test externo para obtener un estimador imparcial de AUC/AUPRC \cite{Tsamardinos2022Patterns}.
+
+\subsection{Intervalos de confianza por bootstrap}
+Con los pares $\{(\hat{p}_s,y_s)\}$ a nivel de sujeto en test externo, re-muestreamos $B=2000$ veces por \emph{bootstrap de sujetos} y computamos AUC/AUPRC en cada réplica; reportamos IC95\% (percentil/BCa). Esto cuantifica incertidumbre por \emph{varianza entre sujetos}.
+
+\subsection{Código de referencia (anidamiento)}
+\begin{minted}[fontsize=\small]{python}
+from sklearn.model_selection import GroupKFold, GridSearchCV
+from sklearn.svm import SVC
+from sklearn.metrics import roc_auc_score
+import numpy as np
+
+def agg_logits(scores, how="logit_mean", beta=2.0):
+    scores = np.clip(scores, 1e-6, 1-1e-6)
+    if how == "mean":
+        return scores.mean()
+    if how == "softmax":
+        num = (scores**beta).sum()
+        den = (scores**(beta-1)).sum() + 1e-9
+        return num/den
+    # logit-mean (default)
+    logit = np.log(scores/(1-scores))
+    return 1/(1+np.exp(-logit.mean()))
+
+outer = GroupKFold(n_splits=5)
+auc_out = []
+for tr_idx, te_idx in outer.split(X_patches, y_subject, groups=groups_subject):
+    # X_patches: rasgos por parche; y_subject: etiquetas por parche (heredadas);
+    # groups_subject: id de sujeto por parche
+    X_tr, X_te = X_patches[tr_idx], X_patches[te_idx]
+    y_tr, y_te = y_patch[tr_idx], y_patch[te_idx]
+    g_tr, g_te = groups_subject[tr_idx], groups_subject[te_idx]
+
+    inner = GroupKFold(n_splits=4)
+    search = GridSearchCV(
+        SVC(kernel="rbf", probability=True, class_weight="balanced"),
+        {"C":[0.1,1,10,100], "gamma":[1e-3,1e-2,1e-1,1]},
+        scoring="roc_auc", cv=inner.split(X_tr, y_tr, groups=g_tr), n_jobs=-1
+    )
+    search.fit(X_tr, y_tr)
+    proba_te = search.best_estimator_.predict_proba(X_te)[:,1]
+    # agregar por sujeto
+    auc_groups = []
+    for sid in np.unique(g_te):
+        s = proba_te[g_te==sid]
+        y = int(np.median(y_te[g_te==sid]))
+        auc_groups.append((agg_logits(s), y))
+    y_hat, y_true = zip(*auc_groups)
+    auc_out.append(roc_auc_score(y_true, y_hat))
+AUC = float(np.mean(auc_out))
+\end{minted}
+
+%-----------------------------------------------------------
+\section{Calibración, umbral clínico y decisión}
+\label{sec:calibration_threshold}
+
+\subsection{Calibración}
+Para transformar puntajes en probabilidades bien calibradas se evalúa \emph{Brier score} y curvas de confiabilidad. Si procede, aplicamos \emph{Platt scaling} (sigmoide) o \emph{isotonic regression} usando \emph{exclusivamente} predicciones \emph{out-of-fold} del bucle externo para ajustar el calibrador y luego re-evaluar en test externo del mismo pliegue (sin reutilizar muestras para ajustar y evaluar el calibrador simultáneamente).
+
+\begin{minted}[fontsize=\small]{python}
+from sklearn.calibration import calibration_curve
+from sklearn.isotonic import IsotonicRegression
+# y_oof, p_oof: etiquetas y probabilidades OOF concatenadas del outer CV
+prob_true, prob_pred = calibration_curve(y_oof, p_oof, n_bins=10, strategy="quantile")
+iso = IsotonicRegression(out_of_bounds="clip").fit(p_oof, y_oof)
+p_cal = iso.predict(p_test)  # aplicar por pliegue externo
+\end{minted}
+
+\subsection{Umbral por costo clínico}
+Si $C_{\mathrm{FP}}$ y $C_{\mathrm{FN}}$ son los costos relativos de falso positivo/negativo, la regla de Bayes con probabilidades calibradas clasifica $y=1$ si
+\begin{equation}
+P(y{=}1|x) \;\ge\; \tau^\ast \;=\; \frac{C_{\mathrm{FP}}}{C_{\mathrm{FP}}+C_{\mathrm{FN}}}.
+\label{eq:tau_cost}
+\end{equation}
+En cribado, $C_{\mathrm{FN}}\gg C_{\mathrm{FP}}$ $\Rightarrow$ $\tau^\ast$ bajo (alta sensibilidad). En ausencia de costos explícitos, el punto de \emph{Youden} $J=\max_\tau \{\mathrm{TPR}-\mathrm{FPR}\}$ ofrece un compromiso estándar. Reportamos matriz de confusión, sensibilidad, especificidad, PPV/NPV y F1 en $\tau^\ast$ y en $J$.
+
+%-----------------------------------------------------------
+\section{Ablaciones y análisis de sensibilidad}
+\label{sec:ablations}
+
+\subsection{Ablación de rasgos}
+Comparaciones con \emph{idéntica} CV anidada y calibración:
+\[
+\text{LBP}\quad\text{vs.}\quad\text{GLCM}\quad\text{vs.}\quad\text{FFT}\quad\text{vs.}\quad
+\text{LBP+GLCM}\quad\text{vs.}\quad\text{LBP+FFT}\quad\text{vs.}\quad\text{GLCM+FFT}\quad\text{vs.}\quad\text{LBP+GLCM+FFT}.
+\]
+Se evalúa $\Delta\text{AUC}$ y $\Delta\text{AUPRC}$ con IC95\% por bootstrap. H1/H2 predicen que FFT (picos radiales/energía alta) y LBP (microcontraste) son los mayores contribuyentes; GLCM añade robustez angular/local.
+
+\subsection{Sensibilidad a preprocesamiento}
+Grid en \texttt{clip-limit} CLAHE, tamaño de tesela, cuantización $L$ (GLCM), tamaño de parche $w$ y \emph{stride}. Reportamos mapas de calor de AUC (promedio externo) y seleccionamos configuraciones en regiones \emph{planas} (insensibles), favoreciendo estabilidad.
+
+\subsection{Robustez a SNR e iluminación}
+Estratificamos sujetos por cuartiles de $\mathrm{SNR}_B$ (Sec.~\ref{sec:muestras}) y repetimos evaluación para cada estrato. Esperamos caída de AUC menor a $5$ puntos entre Q1 y Q4 si la ingeniería de rasgos es robusta. Se analizan curvas ROC/PR por estrato.
+
+\subsection{Control por múltiples parches}
+Para evitar inflación de significancia por correlación intra-sujeto, todos los IC y pruebas se realizan \emph{a nivel de sujeto} tras agregación. Cuando se analizan rasgos a nivel de parche con modelos lineales, se usan errores estándar \emph{cluster-robustos} (sandwich) y/o \emph{bootstrapping} por sujeto.
+
+%-----------------------------------------------------------
+\section{Interpretabilidad: SHAP y validación física}
+\label{sec:shap}
+
+Calculamos \emph{valores de Shapley} (KernelSHAP para SVM/LR; TreeSHAP para RF) sobre el modelo ganador. El \emph{top-10} de rasgos por $|\phi_j|$ se confronta con la física:
+\begin{itemize}
+\item $k_1\uparrow$, $R_{HL}\uparrow$, pendiente espectral menos negativa $\Rightarrow$ mayor probabilidad de AF (franjas más finas, patrón más rico en altas frecuencias).
+\item $H_\text{LBP}\uparrow$, $C_\text{LBP}\uparrow$, $\mathrm{CON}\uparrow$, $\mathrm{ENT}\uparrow$ (GLCM) $\Rightarrow$ mayor \emph{desorden/contraste} interferométrico en AF.
+\item $\mathrm{HOM}\uparrow$ y $M_2\downarrow$ $\Rightarrow$ patrón más circular/regular (sano).
+\end{itemize}
+Se incluyen \emph{waterfall plots} y \emph{beeswarm} (por pliegue externo) y ejemplos de casos límite con explicaciones consistentes con H1–H2 \cite{Kiani2022TextureSurvey,Tsamardinos2022Patterns}.
+
+%-----------------------------------------------------------
+\section{Complejidad computacional e inferencia en CPU}
+\label{sec:complexity}
+
+\subsection{Costes por parche}
+\begin{itemize}
+\item \textbf{FFT 2D:} $O(w^2\log w)$; con $w\in[96,128]$ es sub-milisegundo en CPU moderna por parche.
+\item \textbf{LBP/GLCM:} $O(w^2 P)$ y $O(w^2|\mathcal{D}||\Theta|)$, respectivamente; con $P\le 24$, $|\mathcal{D}||\Theta|=12$ es acotado.
+\item \textbf{Clasificador lineal/SVM}: inferencia $O(d)$ / $O(\#\mathrm{SV}\cdot d)$; mantenemos $d\le 128$ y $\#\mathrm{SV}$ moderado con regularización.
+\end{itemize}
+Con \emph{batching} y \texttt{numba}, el tiempo de inferencia por parche es $\ll 1$ ms; con $\sim 100$ parches por sujeto, la decisión de slide es $\le 0.1$ s en CPU (C4).
+
+\subsection{Memoria y almacenamiento}
+Los rasgos por parche ocupan $d\cdot 4$ bytes; con $d\le 128$ y 100 parches $\Rightarrow$ $\sim 50$ KB por sujeto. Modelos (SVM/RF) $< 5$ MB.
+
+%-----------------------------------------------------------
+\section{Listados de referencia (repositorio)}
+\label{sec:listados}
+
+\noindent\textbf{Sugeridos para anexar} desde \texttt{hologram\_classifier\_v2}:
+\begin{itemize}
+\item \texttt{feature\_engineering.py} (cómputo de $P_{\mathrm{rad}}$, picos, $R_{HL}$, LBP/GLCM).
+\item \texttt{nested\_cv\_subject\_level.py} (GroupKFold, agregación y bootstrap por sujeto).
+\item \texttt{calibration\_thresholds.py} (isotónica, Brier, búsqueda de $\tau^\ast$ por costo y $J$ de Youden).
+\item \texttt{shap\_analysis.py} (KernelSHAP/TreeSHAP sobre rasgos top, gráficas).
+\end{itemize}
+
+\begin{minted}[fontsize=\small]{python}
+def radial_profile(power2d, nbins=32):
+    import numpy as np
+    h, w = power2d.shape
+    cy, cx = (h//2, w//2)
+    yy, xx = np.indices((h,w))
+    rr = np.sqrt((yy-cy)**2 + (xx-cx)**2)
+    rmax = rr.max()
+    bins = np.logspace(np.log10(1), np.log10(rmax), nbins)
+    prof = np.zeros(nbins-1, dtype=np.float32)
+    for i in range(nbins-1):
+        mask = (rr>=bins[i]) & (rr<bins[i+1])
+        prof[i] = power2d[mask].mean() if mask.any() else 0.0
+    return prof, bins
+\end{minted}
+
+%-----------------------------------------------------------
+\section{Discusión metodológica (parte II)}
+\paragraph{Consistencia física.} La base espectral (picos, $R_{HL}$, pendiente) es una proyección directa del patrón de franjas derivado del modelo de Fresnel; la anisotropía angular resume desviaciones de circularidad en AF. LBP/GLCM capturan regularidad local inducida por interferencia (no sólo \emph{textura fotográfica}), alineando estadística con óptica \cite{Chen2022Photonics,Greenbaum2014STM}.
+
+\paragraph{Consistencia estadística.} La CV anidada con \texttt{GroupKFold} evita \emph{leaks} por sujeto y desacopla selección/estimación, con IC por bootstrap a nivel de sujeto (\emph{medición honesta} de rendimiento) \cite{Tsamardinos2022Patterns}. La selección de rasgos (FDR + permutación + RFE) favorece parquedad (H4) y reduce varianza.
+
+\paragraph{Limitaciones.} La dependencia residual de $z$ o $p$ no desaparece por completo; la normalización por Nyquist y la multiescala la atenúan. Con muy pocos sujetos, los IC pueden ser anchos; por ello se reportan bandas de confianza y análisis por estratos de SNR. La CNN baseline puede superar a rasgos si se dispone de \emph{muchos} datos y augmentaciones ricas, pero a costa de interpretabilidad \cite{Alzubaidi2020Electronics}.
+
+%===========================================================
+% Próximo bloque (Desarrollo): Implementación, ingeniería, reproducibilidad,
+% resultados esperados, curvas ROC/PR con IC, análisis de errores y SHAP.
+%===========================================================

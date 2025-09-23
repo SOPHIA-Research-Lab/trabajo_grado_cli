@@ -1,0 +1,31 @@
+\chapter{Planteamiento del problema}\label{chap:problema}
+\section{Contexto y brecha diagnosticada}
+El diagnóstico diferencial de la anemia falciforme en ambientes de bajos recursos enfrenta un dilema recurrente: por un lado, los métodos confirmatorios como la cromatografía líquida de alta resolución o la electroforesis ofrecen elevada sensibilidad; por otro, su costo y dependencia de laboratorios especializados dificultan la detección temprana en zonas rurales o en campañas masivas \cite{McGann2017,Shrestha2025}. La microscopía digital holográfica sin lente promete reducir las barreras logísticas, pero almacenar y procesar los hologramas mediante cadenas de reconstrucción complejas compromete la inmediatez diagnóstica \cite{Amann2019,BuitragoDuque2023}. En consecuencia, la comunidad científica se pregunta si es factible automatizar la clasificación de eritrocitos sanos y falciformes directamente sobre los patrones interferométricos, conservando su información física y evitando etapas costosas de reconstrucción \cite{Kim2025,OConnor2020}.
+
+\section{Pregunta de investigación}
+A partir de esta brecha se formula la siguiente pregunta central:
+\begin{quote}
+\textit{¿Es posible desarrollar un sistema de aprendizaje automático interpretable que clasifique hologramas de eritrocitos sanos y falciformes sin reconstrucción digital, garantizando métricas clínicas robustas y detección confiable de muestras fuera de dominio?}
+\end{quote}
+La pregunta sintetiza tres preocupaciones: exactitud diagnóstica, interpretabilidad y capacidad de alerta frente a entradas ajenas al dominio de entrenamiento.
+
+\section{Objetivos específicos}
+Para abordar la pregunta se definieron los siguientes objetivos:
+\begin{itemize}
+    \item Diseñar un pipeline reproducible que unifique distintos repositorios de hologramas, normalice las imágenes y extraiga características físicas relevantes.
+    \item Evaluar descriptores de textura, morfología y frecuencia con modelos clásicos de aprendizaje supervisado, e integrar un esquema de ensamble que mejore la generalización.
+    \item Implementar un mecanismo de validación exhaustiva en escenarios de datos limitados, incluyendo validación cruzada estratificada y Leave-One-Out.
+    \item Incorporar un detector de anomalías que identifique hologramas ajenos al dominio de entrenamiento y provea información interpretativa sobre la desviación de cada muestra.
+    \item Comparar el desempeño del sistema frente a la literatura vigente y analizar su potencial de despliegue en contextos clínicos de bajo costo.
+\end{itemize}
+
+\section{Alcance y delimitaciones}
+El proyecto se circunscribe a la clasificación binaria Healthy vs. SCD empleando un dataset capturado con un mismo arreglo holográfico. No se aborda el diseño óptico detallado del hardware ni la reconstrucción numérica de los hologramas. Tampoco se incluyen tareas de segmentación celular individual ni diagnósticos diferenciales con otras patologías hemoglobinopáticas. El sistema se ejecuta en un entorno Python y asume acceso a recursos de cómputo moderados (CPU multinúcleo) y a las dependencias consignadas en el repositorio. El entrenamiento se realiza con 304 hologramas rotulados y la validación externa con 30 hologramas de organismos no sanguíneos, los cuales sirven como proxy de interferencias ambientales.
+
+\section{Limitaciones y riesgos}
+Entre las principales limitaciones se destacan el tamaño relativamente reducido del dataset y la falta de parámetros ópticos exactos del montaje, lo que restringe la posibilidad de modelar analíticamente la respuesta del sistema. Asimismo, la generalización hacia muestras capturadas con otros sensores o bajo distintas condiciones de iluminación requiere experimentos adicionales. Para mitigar estos riesgos se adoptaron estrategias de validación estrictas, se documentaron todas las decisiones de ingeniería y se habilitaron reportes automáticos que permiten auditar cada ejecución. También se reconoce la necesidad de realizar estudios clínicos controlados antes de cualquier despliegue asistencial.
+
+\section{Hipótesis y productos esperados}
+La hipótesis a contrastar establece que un conjunto de descriptores interpretables combinado con un ensamble de clasificadores lineales y basados en árboles, complementado por un detector de anomalías de Mahalanobis, alcanza métricas superiores al 90\% de exactitud y AUC en evaluación cruzada, además de una sensibilidad elevada ante datos fuera de dominio. La verificación de esta hipótesis implicó desarrollar una infraestructura de software, ejecutar experimentos en tres modos operativos (rápido, completo y profundo) y analizar cuantitativamente los resultados.
+
+El proyecto entrega como productos intermedios un modelo entrenado serializado, reportes automatizados que resumen las métricas clave y una guía operativa para usuarios finales. Estos elementos constituyen la base para validaciones clínicas futuras y conforman el paquete mínimo requerido por las políticas de propiedad intelectual de la universidad \cite{EAFIT2018}.

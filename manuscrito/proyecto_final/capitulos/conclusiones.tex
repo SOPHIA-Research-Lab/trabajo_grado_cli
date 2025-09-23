@@ -1,0 +1,23 @@
+\chapter{Conclusiones y trabajo futuro}\label{chap:conclusiones}
+La presente investigación demuestra que la clasificación de hologramas de eritrocitos sin reconstrucción digital es viable cuando se combina una representación física rica con algoritmos de aprendizaje automático interpretables. Los principales hallazgos se resumen a continuación:
+\begin{enumerate}
+    \item El ensamble de clasificadores propuesto alcanzó métricas competitivas en evaluación cruzada (AUC superior a 0,99 y exactitud de 0,95 en modo rápido), lo que confirma la potencia de los descriptores de textura, frecuencia y morfología para discriminar entre células sanas y falciformes.
+    \item La validación Leave-One-Out del modo profundo registró una precisión del 97,4~\%, lo que aporta evidencia estadística de la estabilidad del sistema aun en escenarios de datos limitados. Este resultado se alinea con recomendaciones recientes sobre validación rigurosa en muestras pequeñas \cite{Vabalas2019,Tsamardinos2022}.
+    \item El detector de anomalías basado en la distancia de Mahalanobis identificó correctamente todos los hologramas externos de organismos no sanguíneos, indicando que el sistema puede advertir al usuario cuando enfrenta entradas fuera de su dominio de entrenamiento.
+    \item La implementación de una interfaz de línea de comandos automatizada incrementa la reproducibilidad y facilita la adopción del sistema en laboratorios con recursos modestos, al tiempo que documenta cada experimento mediante reportes y visualizaciones.
+\end{enumerate}
+
+\section*{Limitaciones}
+A pesar de los resultados promisorios, el estudio presenta limitaciones. El tamaño del dataset restringe la posibilidad de explorar modelos con mayor complejidad y dificulta la estimación de intervalos de confianza estrechos. La ausencia de parámetros ópticos detallados impide realizar simulaciones para complementar la evidencia empírica. Tampoco se evaluó la sensibilidad del sistema ante variaciones severas de iluminación o ante hologramas obtenidos con otros sensores, por lo que la generalización debe confirmarse en escenarios clínicos adicionales. Estas limitaciones orientan las líneas de trabajo futuro descritas a continuación.
+
+\section*{Trabajo futuro}
+A partir de los resultados obtenidos se identifican múltiples líneas de investigación:
+\begin{itemize}
+    \item \textbf{Caracterización óptica}. Registrar parámetros exactos del montaje DLHM (distancias, aperturas, espectro de la fuente) permitiría correlacionar de forma cuantitativa las características seleccionadas con la física del sistema y facilitaría simulaciones numéricas que sirvan para ampliar el dataset sintéticamente.
+    \item \textbf{Expansión del dataset}. Incluir hologramas capturados en múltiples centros clínicos, bajo diversas condiciones ambientales y con otras patologías hemolíticas ayudaría a evaluar la capacidad de generalización y a entrenar modelos multiclase.
+    \item \textbf{Modelos híbridos}. Explorar arquitecturas que combinen redes neuronales ligeras con descriptores físicos podría mejorar la sensibilidad ante patrones sutiles sin sacrificar interpretabilidad \cite{Montero2024}.
+    \item \textbf{Integración clínica}. Desplegar el sistema en entornos de telemedicina requerirá desarrollar interfaces gráficas y protocolos de aseguramiento de calidad, así como evaluar factores éticos y de protección de datos.
+    \item \textbf{Detección temprana}. Analizar la sensibilidad del detector de anomalías frente a variaciones graduales de morfología celular permitiría establecer umbrales de alerta temprana y estudiar transiciones entre estados fisiopatológicos.
+\end{itemize}
+
+En síntesis, el trabajo presentado sienta las bases para un diagnóstico portátil y transparente de anemia falciforme mediante holografía digital. El enfoque adoptado equilibra rigurosidad física, solidez estadística y accesibilidad tecnológica, y abre la puerta a futuras investigaciones que profundicen en la integración de óptica computacional y aprendizaje automático interpretable.

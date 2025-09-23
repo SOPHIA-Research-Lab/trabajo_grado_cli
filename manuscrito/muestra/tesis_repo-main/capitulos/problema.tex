@@ -1,0 +1,122 @@
+%===========================================================
+% Capítulo: Planteamiento del problema
+%===========================================================
+\chapter{Planteamiento del problema}
+\label{chap:problema}
+
+\section{Contexto clínico-tecnológico}
+La anemia falciforme (AF) es una hemoglobinopatía hereditaria con elevada carga global y marcada inequidad en el acceso a diagnóstico confirmatorio. Las rutas estándar (electroforesis de hemoglobina, HPLC) son exactas pero requieren infraestructura, reactivos y personal especializado, lo que retrasa o impide el tamizaje oportuno en entornos de bajos y medianos ingresos. Existe, por tanto, una brecha entre la necesidad de \emph{cribado precoz} y la disponibilidad de tecnología accesible y escalable en el punto de atención (POCT). 
+
+La microscopía digital holográfica sin lente (LDHM) ofrece una plataforma de bajo costo, gran campo de visión y mínima óptica (sin lentes), capaz de registrar \emph{hologramas en línea} de células sanguíneas con resolución micrométrica usando configuraciones portátiles y \emph{open-source} por debajo de los \$200 USD \cite{Amann2019SciRep,BuitragoDuque2023HardwareX,Greenbaum2014STM}. Sin embargo, el flujo holográfico clásico conlleva \textbf{reconstrucción numérica} (propagación de Fresnel/Angular Spectrum), filtrado de imagen gemela y tareas de post-procesado que incrementan costo computacional y sensibilidad a calibraciones (distancia objeto–sensor, alineamiento, coherencia, etc.). 
+
+\textbf{Problema central:} ¿Es posible \textbf{detectar AF} a partir de \textbf{hologramas crudos} de eritrocitos (sin reconstrucción explícita), mediante un pipeline ligero de procesamiento y aprendizaje automático, que mantenga \emph{sensibilidad alta} (prioridad del tamizaje) y \emph{especificidad razonable}, con \emph{validación estadística} rigurosa bajo \emph{pocos datos}? Resolverlo cerraría la brecha entre la captura LDHM y una salida diagnóstica interpretable y operable en campo.
+
+%-----------------------------------------------------------
+\section{Formulación físico-informacional del problema}
+\subsection{Modelo óptico del registro en línea}
+En LDHM en línea, el sensor registra la \emph{intensidad} de la superposición entre una onda de referencia $U_r$ (parte no desviada) y la onda difractada por el objeto $U_o$. Denotando por $\mathbf{r}=(x,y)$ las coordenadas del sensor, el holograma ideal es
+\begin{equation}
+I(\mathbf{r}) = \big|U_r(\mathbf{r}) + U_o(\mathbf{r})\big|^2 
+= |U_r|^2 + |U_o|^2 + 2\,\Re\!\left\{U_r^\ast U_o\right\}.
+\label{eq:intensity}
+\end{equation}
+Bajo iluminación cuasi-coherente y propagación de Fresnel, $U_o$ es la convolución del campo objeto $U_0$ con el núcleo de propagación $h_z$:
+\begin{equation}
+U_o(\mathbf{r}) = (U_0 \ast h_z)(\mathbf{r}),\qquad 
+h_z(\mathbf{r})=\frac{e^{ikz}}{i\lambda z}\,\exp\!\left(\frac{i\pi}{\lambda z}\|\mathbf{r}\|_2^2\right),
+\end{equation}
+donde $z$ es la distancia objeto–sensor, $\lambda$ la longitud de onda y $k=2\pi/\lambda$. La \textbf{información discriminativa} para la morfología eritrocitaria se codifica principalmente en el \emph{término de interferencia} $2\,\Re\{U_r^\ast U_o\}$ (franjas), que refleja simetrías y escalas espaciales del objeto. Eritrocitos sanos (disco bicóncavo $\sim 8~\mu$m) tienden a inducir patrones más \emph{circulares} con frecuencia dominante menor (franjas más separadas); drepanocitos rígidos/elongados generan patrones \emph{anisotrópicos} con contenidos espectrales desplazados hacia frecuencias radiales mayores (franjas más juntas) y firmas angulares \cite{Greenbaum2014STM,Chen2022Photonics}.
+
+\subsection{Resolución, muestreo y SNR}
+La \textbf{resolución lateral} efectiva en LDHM (sin reconstrucción) se puede acotar como
+\begin{equation}
+\delta_\text{lat} \approx \frac{\lambda z}{L}, 
+\end{equation}
+con $L$ el tamaño efectivo del holograma (ventana útil) \cite{Chen2022Photonics}. Además, el sensor muestrea $I(\mathbf{r})$ sobre una rejilla de paso $p$ (tamaño de pixel) en un arreglo $N\times N$. Para resolver las franjas más finas sin aliasing, se requiere respetar Nyquist: $f_\text{franja}^\text{max}<1/(2p)$. En la práctica, $z$ y $p$ determinan la \emph{banda espacial} observable del patrón. El \textbf{SNR} del holograma está gobernado por ruido de \emph{fotones} (Poisson, varianza $\sim I$) y de \emph{lectura} (Gaussiano, varianza $\sigma_r^2$). Un modelo aditivo conveniente es
+\begin{equation}
+\tilde{I} = I + \underbrace{\eta_\text{shot}}_{\text{Poisson}} + \underbrace{\eta_\text{read}}_{\mathcal{N}(0,\sigma_r^2)},
+\end{equation}
+lo que motiva preprocesamiento para estabilizar contraste local (p.ej., CLAHE) y normalizar niveles antes de extraer rasgos robustos \cite{Zhou2019MedImageContrast}.
+
+%-----------------------------------------------------------
+\section{Formulación como problema de aprendizaje supervisado}
+Sea $x\in \mathbb{R}^{m\times n}$ un holograma crudo (o su vectorización) y $y\in\{0,1\}$ la etiqueta (\emph{sano}=0, \emph{AF}=1). En lugar de reconstruir $U_0$, definimos un \textbf{mapa de características} $\phi:\mathbb{R}^{m\times n}\to\mathbb{R}^d$ que extrae descriptores \emph{físico–estadísticos} del patrón:
+\[
+\phi(x) = \big[\underbrace{\text{LBP}}_{\text{textura}},\ 
+\underbrace{\text{GLCM}}_{\text{segundo orden}},\ 
+\underbrace{\text{Energía FFT radial/Angular}}_{\text{frecuencia}},\ 
+\underbrace{\text{Anisotropías}}_{\text{forma en patrón}},\ldots\big] \in \mathbb{R}^d.
+\]
+Buscamos un clasificador $f_\theta:\mathbb{R}^d\to [0,1]$ que estime $P(y{=}1\,|\,\phi(x))$. El \emph{riesgo esperado} bajo una pérdida $\ell$ (p.ej., log-loss) es
+\begin{equation}
+\mathcal{R}(\theta) = \mathbb{E}_{(x,y)\sim \mathcal{D}} \big[\ell\big(y, f_\theta(\phi(x))\big)\big],
+\end{equation}
+desconocido; por ello se minimiza el \emph{riesgo empírico regularizado}
+\begin{equation}
+\hat{\mathcal{R}}_\lambda(\theta) = \frac{1}{N}\sum_{i=1}^N \ell\big(y_i, f_\theta(\phi(x_i))\big) \;+\; \lambda\,\Omega(\theta),
+\end{equation}
+donde $\Omega$ penaliza complejidad (p.ej., norma $\ell_2$ en LR/SVM, profundidad/número de árboles en RF). Esta formulación privilegia modelos \emph{parcos e interpretables} (LR/SVM/RF) con buen sesgo–varianza para tamaños muestrales modestos \cite{Tsamardinos2022Patterns}.
+
+\paragraph{Métrica operativa.} En cribado clínico priorizamos \textbf{sensibilidad} (TPR) alta con \textbf{especificidad} razonable; por tanto, además de \emph{accuracy}, se reportan AUC-ROC y AUPRC. Umbrales de decisión se fijan vía criterio de Youden $J=\text{TPR}-\text{FPR}$ o costos ponderados (perder un positivo es más costoso). Para clases desbalanceadas se recurre a \emph{accuracy balanceada} y \emph{ponderación por clase}.
+
+%-----------------------------------------------------------
+\section{Hipótesis y predicciones contrastables}
+\label{sec:hipotesis}
+\begin{description}
+\item[H1 (física):] Hologramas de eritrocitos AF presentan \emph{mayor contenido de alta frecuencia radial} (franjas más juntas) y \emph{mayor anisotropía angular} que los sanos. \emph{Predicción:} el primer pico radial en FFT ($k_1$) y la razón de energías alta/baja ($E_\text{hi}/E_\text{lo}$) serán significativamente mayores en clase AF (pruebas $t$ o no paramétricas).
+\item[H2 (textura):] La \emph{entropía LBP} y el \emph{contraste GLCM} serán superiores en AF (textura más compleja); la \emph{homogeneidad GLCM} será mayor en sanos. 
+\item[H3 (clasificación):] Un clasificador con $\phi(x)$ = (LBP+GLCM+FFT) alcanza AUC-ROC $\ge 0.90$ en validación cruzada \emph{anidada}, con sensibilidad $\ge 0.90$ a especificidad $\ge 0.85$ (umbral de operación de cribado).
+\item[H4 (parquedad):] Un subconjunto parsimonioso de rasgos (p.ej., top-10 por SHAP/impureza en RF) mantiene el rendimiento (no empeora AUC $>$ 0.02), \emph{implicando} que la señal diagnóstica se concentra en pocas magnitudes físico–estadísticas coherentes con el modelo de difracción.
+\end{description}
+
+%-----------------------------------------------------------
+\section{Restricciones y fuentes de variabilidad}
+\subsection{Nociones de generalización y complejidad}
+El tamaño muestral $N$ es limitado, con heterogeneidad entre hologramas (iluminación, $z$, preparación). Con SVM-RBF, la cota de error de generalización depende del \emph{margen} $\gamma$ y de la norma del parámetro efectivo; informalmente, mayores márgenes (regularización adecuada) favorecen generalización. Con \emph{nested CV} se desacopla selección de hiperparámetros de la estimación de desempeño, mitigando optimismo \cite{Tsamardinos2022Patterns}. Además, se reportan IC95\% por \emph{bootstrap} sobre predicciones out-of-fold (estabilidad).
+
+\subsection{Modelo de ruido y artefactos}
+El patrón $I$ sufre contaminación por: (i) ruido Poisson (\emph{shot}), (ii) ruido de lectura, (iii) suciedad/defectos del portaobjetos (generan máximos locales espurios), (iv) aliasing por violar Nyquist, y (v) \emph{imagen gemela} (términos cruzados no deseados). Se emplea \emph{CLAHE} y normalización por percentiles (1–99) para estabilizar histogramas; la cuantización a niveles discretos (p.ej., 64 niveles) reduce sensibilidad de GLCM a ruido fino \cite{Zhou2019MedImageContrast}.
+
+\subsection{Shift de dominio}
+Variaciones en $\lambda$, $z$, o en el sensor (tamaño de pixel $p$) cambian escalas espaciales de las franjas. Para robustez, las características FFT se definen \emph{en fracción de Nyquist}, y las LBP/GLCM se calculan en escalas múltiples. Aun así, el \emph{domain shift} inter-plataformas debe considerarse en futuras validaciones externas.
+
+%-----------------------------------------------------------
+\section{Objetivos}
+\subsection{Objetivo general}
+Diseñar, implementar y validar un \textbf{sistema de clasificación directa de hologramas LDHM} de eritrocitos para \textbf{detección de AF} sin reconstrucción explícita, basado en un conjunto compacto de \emph{rasgos físico–estadísticos} (LBP, GLCM, FFT) y clasificadores parcos (SVM/RF), con \textbf{evaluación estadística rigurosa} y \textbf{criterios de desempeño clínicamente relevantes}.
+
+\subsection{Objetivos específicos}
+\begin{enumerate}
+\item Establecer un \emph{pipeline} de preprocesamiento robusto (normalización por percentiles, CLAHE, cuantización/estandarización) que mejore SNR y estabilidad de rasgos.
+\item Derivar e implementar $\phi(x)$ con descriptores de textura (LBP/GLCM), frecuencia (energía radial/anillos, anisotropía angular) y medidas de simetría del patrón, justificadas desde el modelo de difracción.
+\item Comparar LR, SVM-RBF, RF y (como \emph{baseline}) una CNN ligera con transferencia, bajo \emph{nested CV}, reportando AUC-ROC/AUPRC, sensibilidad, especificidad y exactitud balanceada (con IC95\%).
+\item Analizar \emph{interpretabilidad} (importancias RF, SHAP para SVM) y contrastar top-rasgos con las hipótesis físicas (Sec.~\ref{sec:hipotesis}).
+\item Documentar límites y sesgos, y proponer lineamientos para despliegue en POCT (hardware LDHM \emph{open-source} y cómputo embarcado) \cite{Amann2019SciRep,BuitragoDuque2023HardwareX}.
+\end{enumerate}
+
+%-----------------------------------------------------------
+\section{Criterios de éxito y validación}
+Se considerará exitoso el sistema si:
+\begin{itemize}
+\item \textbf{C1 (rendimiento):} AUC-ROC $\ge 0.90$ con \textbf{IC95\%} totalmente por encima de 0.80; sensibilidad $\ge 0.90$ con especificidad $\ge 0.85$ en punto operativo clínico (Youden o costo ponderado).
+\item \textbf{C2 (parquedad):} Subconjunto $\le 10$ rasgos mantiene AUC (caída $\le 0.02$) y mejora interpretabilidad.
+\item \textbf{C3 (estabilidad):} Varianza entre pliegues externa $\le 0.05$ en AUC; pruebas de \emph{stress} (pequeños cambios de contraste/ruido) no degradan sensibilidad $> 5$ puntos.
+\item \textbf{C4 (eficiencia):} Tiempo de inferencia por holograma $\le 0.1$~s en CPU de portátil estándar (sin GPU).
+\end{itemize}
+
+%-----------------------------------------------------------
+\section{Aporte esperado}
+El proyecto aporta: (i) una \textbf{ruta alternativa} de análisis de hologramas centrada en \emph{clasificación directa} con fundamentos físico–matemáticos explícitos, (ii) un \textbf{diseño estadístico} correcto para evaluación con pocos datos (nested CV + IC), (iii) \textbf{interpretabilidad} alineada con difracción (picos radiales/anillos y texturas), y (iv) una \textbf{hoja de ruta} para POCT en AF sobre plataformas LDHM de bajo costo \cite{Amann2019SciRep,BuitragoDuque2023HardwareX,Greenbaum2014STM,Tsamardinos2022Patterns,Chen2022Photonics}.
+
+%-----------------------------------------------------------
+\section{Riesgos y mitigaciones}
+\begin{itemize}
+\item \emph{Sobreajuste por pocos datos:} usar nested CV, regularización, selección de rasgos (SHAP/RFE) y reporte con IC95\%.
+\item \emph{Artefactos y gemela:} diseño de rasgos robustos (energías radiales, cuantización) y exclusión de máximos aislados por morfología.
+\item \emph{Shift inter-plataformas:} normalización relativa a Nyquist y escalas múltiples (LBP/GLCM); futuro \emph{domain adaptation}.
+\item \emph{Desbalance real de prevalencia:} ponderación por clase y evaluación con AUPRC; escenarios de umbral dependientes de costos.
+\end{itemize}
+
+%-----------------------------------------------------------
+\section{Resumen de la sección}
+Se ha planteado el problema como una tarea de clasificación supervisada sobre hologramas crudos, anclada en un modelo óptico de interferencia y restricciones de muestreo/SNR. Las hipótesis conectan parámetros del patrón (picos radiales, anisotropías, texturas) con la morfología eritrocitaria alterada en AF. Los objetivos, criterios de éxito y riesgos definen un marco operativo para un sistema interpretable, eficiente y validado estadísticamente, coherente con la meta POCT sobre hardware LDHM de bajo costo \cite{Amann2019SciRep,BuitragoDuque2023HardwareX,Greenbaum2014STM,Chen2022Photonics,Tsamardinos2022Patterns}.

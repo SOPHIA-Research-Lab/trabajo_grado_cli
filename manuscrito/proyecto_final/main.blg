@@ -1,0 +1,66 @@
+This is BibTeX, Version 0.99d (TeX Live 2026/dev/Arch Linux)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: main.aux
+A level-1 auxiliary file: capitulos/resumen.aux
+A level-1 auxiliary file: capitulos/abstract.aux
+A level-1 auxiliary file: capitulos/introduccion.aux
+A level-1 auxiliary file: capitulos/problema.aux
+A level-1 auxiliary file: capitulos/marco.aux
+A level-1 auxiliary file: capitulos/metodologia.aux
+A level-1 auxiliary file: capitulos/desarrollo.aux
+A level-1 auxiliary file: capitulos/resultados.aux
+A level-1 auxiliary file: capitulos/conclusiones.aux
+A level-1 auxiliary file: capitulos/bibliografia.aux
+The style file: IEEEtran.bst
+Reallocated singl_function (elt_size=8) to 100 items from 50.
+Reallocated singl_function (elt_size=8) to 100 items from 50.
+Reallocated singl_function (elt_size=8) to 100 items from 50.
+Reallocated wiz_functions (elt_size=8) to 6000 items from 3000.
+Reallocated singl_function (elt_size=8) to 100 items from 50.
+Database file #1: references.bib
+-- IEEEtran.bst version 1.14 (2015/08/26) by Michael Shell.
+-- http://www.michaelshell.org/tex/ieeetran/bibtex/
+-- See the "IEEEtran_bst_HOWTO.pdf" manual for usage information.
+
+Done.
+You've used 27 entries,
+            4087 wiz_defined-function locations,
+            1019 strings with 11931 characters,
+and the built_in function-call counts, 18535 in all, are:
+= -- 1685
+> -- 316
+< -- 134
++ -- 181
+- -- 64
+* -- 853
+:= -- 2956
+add.period$ -- 54
+call.type$ -- 27
+change.case$ -- 27
+chr.to.int$ -- 222
+cite$ -- 27
+duplicate$ -- 1475
+empty$ -- 1393
+format.name$ -- 80
+if$ -- 4340
+int.to.chr$ -- 0
+int.to.str$ -- 27
+missing$ -- 229
+newline$ -- 106
+num.names$ -- 27
+pop$ -- 448
+preamble$ -- 1
+purify$ -- 0
+quote$ -- 2
+skip$ -- 1517
+stack$ -- 0
+substring$ -- 678
+swap$ -- 1175
+text.length$ -- 60
+text.prefix$ -- 0
+top$ -- 5
+type$ -- 27
+warning$ -- 0
+while$ -- 71
+width$ -- 29
+write$ -- 299

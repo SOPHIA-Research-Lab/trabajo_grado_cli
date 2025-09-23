@@ -1,0 +1,68 @@
+\babel@toc {spanish}{}\relax 
+\contentsline {chapter}{\numberline {1}Introducción}{10}{chapter.1}%
+\contentsline {section}{\numberline {1.1}Contexto clínico y desafíos actuales}{10}{section.1.1}%
+\contentsline {section}{\numberline {1.2}Microscopía holográfica como oportunidad tecnológica}{10}{section.1.2}%
+\contentsline {section}{\numberline {1.3}Aprendizaje automático interpretable}{11}{section.1.3}%
+\contentsline {section}{\numberline {1.4}Enfoque del proyecto}{11}{section.1.4}%
+\contentsline {section}{\numberline {1.5}Ciencia abierta y transferencia tecnológica}{12}{section.1.5}%
+\contentsline {section}{\numberline {1.6}Contribuciones y estructura del documento}{12}{section.1.6}%
+\contentsline {chapter}{\numberline {2}Planteamiento del problema}{14}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Contexto y brecha diagnosticada}{14}{section.2.1}%
+\contentsline {section}{\numberline {2.2}Pregunta de investigación}{14}{section.2.2}%
+\contentsline {section}{\numberline {2.3}Objetivos específicos}{15}{section.2.3}%
+\contentsline {section}{\numberline {2.4}Alcance y delimitaciones}{15}{section.2.4}%
+\contentsline {section}{\numberline {2.5}Limitaciones y riesgos}{16}{section.2.5}%
+\contentsline {section}{\numberline {2.6}Hipótesis y productos esperados}{16}{section.2.6}%
+\contentsline {chapter}{\numberline {3}Marco teórico}{17}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Microscopía holográfica sin lente}{17}{section.3.1}%
+\contentsline {subsection}{\numberline {3.1.1}Propagación y modelado matemático}{18}{subsection.3.1.1}%
+\contentsline {subsection}{\numberline {3.1.2}Fenómenos de muestreo y discretización}{18}{subsection.3.1.2}%
+\contentsline {section}{\numberline {3.2}Fisiopatología de la anemia falciforme y retos diagnósticos}{19}{section.3.2}%
+\contentsline {section}{\numberline {3.3}Representación de hologramas}{20}{section.3.3}%
+\contentsline {section}{\numberline {3.4}Estado del arte en clasificación holográfica}{21}{section.3.4}%
+\contentsline {section}{\numberline {3.5}Modelos de clasificación}{22}{section.3.5}%
+\contentsline {subsection}{\numberline {3.5.1}Regresión logística}{22}{subsection.3.5.1}%
+\contentsline {subsection}{\numberline {3.5.2}Máquinas de soporte vectorial}{22}{subsection.3.5.2}%
+\contentsline {subsection}{\numberline {3.5.3}Métodos basados en árboles}{23}{subsection.3.5.3}%
+\contentsline {subsection}{\numberline {3.5.4}Ensamble heterogéneo}{23}{subsection.3.5.4}%
+\contentsline {section}{\numberline {3.6}Aprendizaje profundo y enfoques híbridos}{23}{section.3.6}%
+\contentsline {section}{\numberline {3.7}Validación estadística}{24}{section.3.7}%
+\contentsline {section}{\numberline {3.8}Detección de anomalías}{24}{section.3.8}%
+\contentsline {section}{\numberline {3.9}Interpretabilidad y consideraciones éticas}{25}{section.3.9}%
+\contentsline {section}{\numberline {3.10}Síntesis del marco teórico}{26}{section.3.10}%
+\contentsline {chapter}{\numberline {4}Metodología}{27}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Descripción de los datos}{27}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Unificación y preprocesamiento}{28}{section.4.2}%
+\contentsline {section}{\numberline {4.3}Extracción de características}{29}{section.4.3}%
+\contentsline {section}{\numberline {4.4}Selección de características}{29}{section.4.4}%
+\contentsline {section}{\numberline {4.5}Análisis exploratorio y control de calidad}{30}{section.4.5}%
+\contentsline {section}{\numberline {4.6}Modelos y ensamble}{30}{section.4.6}%
+\contentsline {section}{\numberline {4.7}Planteamiento matemático del clasificador}{31}{section.4.7}%
+\contentsline {section}{\numberline {4.8}Validación y métricas}{32}{section.4.8}%
+\contentsline {section}{\numberline {4.9}Plan experimental y modos de ejecución}{33}{section.4.9}%
+\contentsline {section}{\numberline {4.10}Detección de anomalías}{33}{section.4.10}%
+\contentsline {section}{\numberline {4.11}Automatización e interfaz}{34}{section.4.11}%
+\contentsline {section}{\numberline {4.12}Infraestructura de ejecución y reproducibilidad}{34}{section.4.12}%
+\contentsline {section}{\numberline {4.13}Gestión de riesgos y calidad}{35}{section.4.13}%
+\contentsline {chapter}{\numberline {5}Desarrollo experimental y de ingeniería}{36}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Estructura del repositorio}{36}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Diseño del pipeline}{37}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Modos de operación}{37}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Automatización de reportes}{38}{section.5.4}%
+\contentsline {section}{\numberline {5.5}Integración del detector de anomalías}{38}{section.5.5}%
+\contentsline {section}{\numberline {5.6}Consideraciones de desempeño}{39}{section.5.6}%
+\contentsline {section}{\numberline {5.7}Gestión de configuraciones}{39}{section.5.7}%
+\contentsline {section}{\numberline {5.8}Retos enfrentados}{39}{section.5.8}%
+\contentsline {section}{\numberline {5.9}Cronograma de iteraciones}{40}{section.5.9}%
+\contentsline {section}{\numberline {5.10}Pruebas automatizadas y verificación continua}{40}{section.5.10}%
+\contentsline {section}{\numberline {5.11}Estrategia de empaquetado y despliegue}{41}{section.5.11}%
+\contentsline {section}{\numberline {5.12}Documentación y soporte}{41}{section.5.12}%
+\contentsline {chapter}{\numberline {6}Resultados y análisis}{42}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Rendimiento del clasificador}{42}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Importancia de características}{44}{section.6.2}%
+\contentsline {section}{\numberline {6.3}Análisis estadístico complementario}{46}{section.6.3}%
+\contentsline {section}{\numberline {6.4}Validación fuera de dominio}{46}{section.6.4}%
+\contentsline {section}{\numberline {6.5}Comparación con antecedentes}{48}{section.6.5}%
+\contentsline {section}{\numberline {6.6}Sensibilidad a hiperparámetros}{48}{section.6.6}%
+\contentsline {section}{\numberline {6.7}Discusión}{49}{section.6.7}%
+\contentsline {chapter}{\numberline {7}Conclusiones y trabajo futuro}{51}{chapter.7}%

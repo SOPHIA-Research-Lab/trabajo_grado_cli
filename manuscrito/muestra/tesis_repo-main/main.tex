@@ -1,0 +1,96 @@
+\documentclass[12pt,letterpaper]{report}
+\usepackage[spanish]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{float}
+
+\usepackage[colorlinks=true, citecolor=blue, linkcolor=blue, urlcolor=blue]{hyperref}
+\usepackage[authoryear]{natbib}
+
+\usepackage{appendix}
+\usepackage{minted}
+
+\usepackage{xcolor}
+\usepackage{listings}
+
+\usepackage{parskip}
+
+\usepackage[margin=10pt,font=small,labelfont=bf]{caption}
+
+%%%
+
+\DeclareMathOperator{\dd}{\,d\!}
+\definecolor{militarygreen}{RGB}{50, 120, 69}
+
+\definecolor{codekeyword}{rgb}{0.5,0,0.35}
+\definecolor{codecomment}{rgb}{0.0,0.5,0.0}
+\definecolor{codestring}{rgb}{0.16,0.16,1.0}
+
+\lstdefinestyle{mystyle}{
+    language=Python,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{codekeyword}\bfseries,
+    commentstyle=\color{codecomment},
+    stringstyle=\color{codestring},
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=4
+}
+
+\lstset{style=mystyle}
+
+
+%%%
+
+\addto\captionsspanish{\renewcommand{\contentsname}{Contenido}}
+\addto\captionsspanish{\renewcommand{\chaptername}{Capítulo}}
+\addto\captionsspanish{\renewcommand{\listfigurename}{Lista de Figuras}}
+\addto\captionsspanish{\renewcommand{\listtablename}{Lista de Tablas}}
+\addto\captionsspanish{\renewcommand{\tablename}{Tabla}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\input{capitulos/portada}
+
+\tableofcontents
+\listoffigures
+\listoftables
+
+\include{capitulos/resumen}
+
+\include{capitulos/abstract}
+
+\include{capitulos/introduccion}
+
+\include{capitulos/problema}
+
+\include{capitulos/marco}
+
+\include{capitulos/metodologia}
+
+\include{capitulos/desarrollo}
+
+\include{capitulos/resultados}
+
+\include{capitulos/conclusiones}
+
+\include{capitulos/bibliografia}
+
+\appendix
+\include{capitulos/anexos}
+
+\end{document}

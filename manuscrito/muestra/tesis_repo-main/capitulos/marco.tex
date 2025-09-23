@@ -1,0 +1,299 @@
+%===========================================================
+% Capítulo: Marco teórico (I) — Óptica de la holografía en línea y muestreo
+%===========================================================
+\chapter{Marco teórico}
+\label{chap:marco}
+
+\section{Holografía digital sin lente (LDHM) en configuración en línea}
+La holografía digital sin lente (LDHM) registra en el sensor el patrón de interferencia entre la onda \emph{no desviada} (referencia) y la onda \emph{difractada} por el objeto. En una configuración en línea, fuente–muestra–sensor están colineales y la referencia es la porción del frente de onda que atraviesa la muestra sin desviarse apreciablemente. El sensor \emph{no} forma imagen (no hay lentes): registra intensidad de una superposición coherente. Denotando por $\mathbf{r}=(x,y)$ las coordenadas transversales en el plano del sensor y por $z$ la distancia objeto–sensor:
+
+\begin{equation}
+I(\mathbf{r}) \;=\; \big|U_r(\mathbf{r}) + U_o(\mathbf{r})\big|^2 
+\;=\; |U_r|^2 + |U_o|^2 + 2\,\Re\!\{U_r^\ast U_o\}.
+\label{eq:holo_intensity}
+\end{equation}
+
+Suponiendo $U_r(\mathbf{r})\approx A_r e^{ikz}$ casi uniforme (amplitud $A_r$), el término de interferencia $2\Re\{U_r^\ast U_o\}$ domina la codificación estructural (franjas). En el régimen escalar de Fresnel, el campo difractado $U_o$ se escribe como convolución del campo en el plano objeto $U_0(\boldsymbol{\rho})$ con el núcleo de propagación $h_z$:
+\begin{align}
+U_o(\mathbf{r}) &= \big(U_0 \ast h_z\big)(\mathbf{r}),\\
+h_z(\mathbf{r}) &= \frac{e^{ikz}}{i\lambda z}\exp\!\left(\frac{i\pi}{\lambda z}\|\mathbf{r}\|_2^2\right),\qquad k=\frac{2\pi}{\lambda}.
+\end{align}
+En el dominio de Fourier (par conjugado $\mathbf{k}=(k_x,k_y)$), la propagación se representa como un filtro de fase (método del \emph{espectro angular}):
+\begin{equation}
+\mathcal{F}\{U_o\}(\mathbf{k}) \;=\; \mathcal{F}\{U_0\}(\mathbf{k})\,H_z(\mathbf{k}),\qquad
+H_z(\mathbf{k}) = \exp\!\big(i z\,\sqrt{k^2 - \|\mathbf{k}\|_2^2}\big),
+\end{equation}
+con aproximación parabólica $H_z(\mathbf{k})\approx \exp\!\big(izk - i z \|\mathbf{k}\|_2^2/(2k)\big)$ en Fresnel. La información morfológica del objeto (p.~ej., eritrocito) se manifiesta como \emph{modulaciones espaciales} en $U_o$ que, al interferir con $U_r$, generan \textbf{franjas} cuya periodicidad radial/angulada depende de las dimensiones y simetrías del objeto.
+
+\paragraph{Objetos débilmente absorbentes \& fase delgada.} Para células sin tinción, el eritrocito actúa mayormente como \emph{fase delgada}: $U_0(\boldsymbol{\rho}) \approx A_0 \exp\!\big(i\phi(\boldsymbol{\rho})\big)$ con $\phi(\boldsymbol{\rho})\simeq k\,\Delta n\,t(\boldsymbol{\rho})$, donde $\Delta n$ es el contraste de índice y $t$ el espesor óptico. A primer orden (Born/Rytov), la difracción depende de gradientes de fase; variaciones morfológicas (p.~ej., bicóncava vs. elongada) producen firmas espectrales y texturales distintas en $I(\mathbf{r})$.
+
+\section{Relación entre morfología eritrocitaria y patrón de franjas}
+El eritrocito sano puede aproximarse ópticamente como una \emph{apertura circular suave} o un \emph{disco bicóncavo} quasi-simétrico; su contribución en el dominio $\mathbf{k}$ es análoga a una función con \emph{anillos} (comparable a patrones de Bessel/Airy suavizados). El drepanocito (elongado/curvo) aproxima una apertura elíptica/aniso\-trópica; en $\mathbf{k}$ se observan \emph{anillos} deformados y desplazamiento de energía hacia frecuencias más altas en la dirección del eje mayor.
+
+\paragraph{Heurística espectral.} Si $O(\mathbf{r})$ denota una \emph{apertura} efectivamente circular de radio $a$, su transformada $\widehat{O}(\mathbf{k})$ presenta un lóbulo principal dominante a una frecuencia $k_\rho \sim \mathcal{O}(1/a)$ (en unidades normalizadas). Un objeto más \emph{grande/elongado} induce \emph{franjas más finas} en $I(\mathbf{r})$ (periodo espacial menor), lo que se traduce en \textbf{picos radiales} a frecuencias mayores en $|\mathcal{F}\{I\}|$. En términos prácticos, el \emph{primer pico radial} $k_1$ y razones de energía en bandas altas $E_{\text{hi}}/E_{\text{lo}}$ aumentan para morfologías \emph{no circulares/elongadas}. Adicionalmente, medidas de \emph{anisotropía angular} (p.~ej., varianza angular de energía) crecen cuando las franjas dejan de ser concéntricas/circulares.
+
+\section{Muestreo, resolución y espacio–ancho de banda (SBP)}
+Sea el sensor un arreglo $N\times N$ con paso de pixel $p$ y lado $L=Np$. El muestreo de $I(\mathbf{r})$ en rejilla discretiza el espacio de frecuencias con paso $\Delta k=2\pi/L$ y Nyquist $k_\text{NQ}=\pi/p$. Dos condiciones fundamentales:
+
+\begin{description}
+\item[Criterio de Nyquist en franjas:] la frecuencia máxima de franjas $f_\text{franja}^{\max}$ debe satisfacer $f_\text{franja}^{\max}<\frac{1}{2p}$ para evitar aliasing. Como regla física práctica, $z$ y $\lambda$ deben ajustarse para que la familia de franjas caiga dentro del espectro observable por el sensor.
+\item[Resolución lateral efectiva:] en LDHM, la cota típica $\delta_{\text{lat}} \approx \lambda z/L$ vincula la separabilidad lateral con la banda $\mathbf{k}$ utilizable; reducir $z$ o aumentar $L$ (más píxeles o \emph{tiling}) mejora $\delta_{\text{lat}}$ hasta las limitaciones por coherencia/SNR.
+\end{description}
+
+El \textbf{producto espacio–banda} (SBP) cuantifica la cantidad de grados de libertad de la señal holográfica: $\text{SBP}\sim$ (área campo de visión)$\times$ (banda espacial útil). En LDHM, el SBP alto permite capturar simultáneamente muchas celdas en campo amplio, pero impone requisitos de muestreo para no sub-muestrear franjas finas.
+
+\section{Coherencia, SNR y preprocesamiento}
+La visibilidad de franjas depende de la \emph{coherencia temporal/espacial} de la fuente. LED/narrowband ofrecen compromisos entre coste y contraste de interferencia. El ruido dominante incluye:
+\begin{itemize}
+\item \textbf{Shot noise} (Poisson): varianza $\sigma^2 \approx I$ a altos niveles de señal.
+\item \textbf{Ruido de lectura} (Gaussiano): varianza $\sigma_r^2$ independiente de $I$.
+\item \textbf{Patrones parásitos}: suciedad, burbujas, polvo; añaden máximos locales y texturas espurias.
+\end{itemize}
+Un preprocesamiento \emph{ligero} pero efectivo:
+\begin{enumerate}
+\item \textbf{Normalización por percentiles} (1--99\,\%): estabiliza rango dinámico y reduce influencia de outliers.
+\item \textbf{CLAHE} (ecualización adaptativa limitada): amplifica microcontraste local en franjas débiles, controlando saturación (\emph{clip limit})\cite{Zhou2019MedImageContrast}.
+\item \textbf{Estandarización} per-imagen ($z$-score): centra y escala para robustez de descriptores (LBP/GLCM/FFT).
+\item \textbf{Cuantización} a niveles discretos (p.~ej., 64 niveles) cuando se usarán GLCM para estabilizar co-ocurrencias.
+\end{enumerate}
+Este pipeline atenúa la variabilidad no informativa (offset/ganancia, baja SNR) preservando la \emph{estructura interferométrica} relevante (franjas).
+
+\section{Modelado de la “imagen gemela” y robustez sin reconstrucción}
+La holografía en línea superpone la imagen real y su \emph{gemela} (conjugada), lo que complica la reconstrucción. Sin embargo, al \emph{no reconstruir} y trabajar sobre $I(\mathbf{r})$ (intensidad), ambas contribuciones aparecen como \emph{textura interferométrica} efectiva. La ingeniería de rasgos en dominio de Fourier (perfiles radiales, anillos, anisotropías) y en textura de segundo orden (GLCM) \emph{promedia/sintetiza} los efectos de la gemela, evitando un filtrado explícito; esto reduce la sensibilidad a errores de calibración (p.~ej., distancia $z$ exacta).
+
+\section{Biomorfología del eritrocito y su firma óptica}
+El eritrocito sano (disco bicóncavo, diámetro $\sim 7.5$–$8.5~\mu$m, espesor central $\sim 1~\mu$m, periférico $\sim 2~\mu$m) presenta un campo de fase $\,\phi(\boldsymbol{\rho})=k\Delta n\,t(\boldsymbol{\rho})\,$ suave y aproximadamente \emph{radialmente simétrico}. En hipoxia, la HbS polimeriza, aumentando rigidez y \emph{elongación} (morfologías tipo hoz, \emph{drepanocitos}). Ópticamente:
+\begin{itemize}
+\item \textbf{Textura:} franjas más numerosas y juntas (alta frecuencia) $\Rightarrow$ mayor \emph{entropía} y \emph{contraste} local.
+\item \textbf{Espectro:} picos radiales desplazados ($k_1$ mayor), energía acumulada en anillos de alta frecuencia, \emph{anisotropía} angular (energía concentrada según orientación).
+\item \textbf{Simetría:} menor \emph{homogeneidad} espacial y mayor \emph{disimilitud} (GLCM) frente a bicóncavos.
+\end{itemize}
+Estas diferencias fundamentan las hipótesis de trabajo (Sec.~\ref{chap:problema}) y guían la selección de rasgos.
+
+\section{Síntesis: implicaciones para el diseño de rasgos}
+El modelo físico sugiere tres familias de descriptores robustos:
+\begin{enumerate}
+\item \textbf{Textura local (LBP):} sensible a alternancias claro/oscuro periódicas (franjas); histograma LBP (uniforme) capta microestructura \emph{sin} sensibilidad fuerte a offsets de iluminación.
+\item \textbf{Co-ocurrencia (GLCM):} cuantifica correlaciones de segundo orden a desplazamientos $(d,\theta)$; \emph{contraste}, \emph{homogeneidad}, \emph{energía} y \emph{correlación} resumen orden/desorden de franjas.
+\item \textbf{Espectro (FFT):} \emph{perfil radial} $P(k_\rho)$, posiciones de picos $(k_1,k_2)$, razón de energías en bandas ($E_\text{hi}/E_\text{lo}$) y \emph{anisotropía} angular (varianza/curtosis sobre $\theta$).
+\end{enumerate}
+Todos ellos son \emph{invariantes a traslación} (la magnitud del espectro lo es; LBP/GLCM se estabilizan con estandarización) y relativamente robustos a cambios de ganancia/offset, cumpliendo el principio de \emph{parquedad informativa} en tamaños muestrales modestos.
+
+%-----------------------------------------------------------
+% Referencias clave usadas en este capítulo (están en referencias.bib):
+%   Amann2019SciRep, BuitragoDuque2023HardwareX, Greenbaum2014STM,
+%   Chen2022Photonics, Zhou2019MedImageContrast
+%===========================================================
+
+% NOTA: En el siguiente mensaje continuaré el Marco teórico (II):
+%       "Descriptores matemáticos (LBP/GLCM/FFT) y fundamentos estadísticos".
+
+%===========================================================
+% Capítulo: Marco teórico (II) — Descriptores matemáticos y fundamentos estadísticos
+%===========================================================
+
+\section{Descriptores matemáticos del patrón holográfico}
+\label{sec:descriptores}
+
+El holograma en línea $I(\mathbf{r})$ (Ec.~\eqref{eq:holo_intensity}) codifica información morfológica del eritrocito en \emph{texturas de interferencia} (alternancias de brillo a escalas finas) y en su \emph{contenido espectral} (anillos/picos radiales y anisotropías angulares). Para explotar dicha señal sin reconstruir $U_0$, definimos un mapa de características $\phi(x)\in\mathbb{R}^d$ que integra \textbf{tres familias} de descriptores: textura local (LBP), co-ocurrencia de segundo orden (GLCM) y espectro de Fourier (perfiles radiales/angulares). Todos se acompañan de preprocesos que estabilizan el contraste (CLAHE) y el rango dinámico, de acuerdo con la discusión de coherencia y SNR del Cap.~\ref{chap:marco} \cite{Zhou2019MedImageContrast,Chen2022Photonics}.
+
+%-----------------------------------------------------------
+\subsection{Textura local: Local Binary Patterns (LBP)}
+\label{subsec:lbp}
+
+Sea $x$ el holograma (entero o flotante) tras normalización y, opcionalmente, ecualización local. En cada píxel central $(u,v)$ comparamos $P$ vecinos sobre un círculo de radio $R$ (muestreados con interpolación bilineal). Definimos el \emph{código LBP}:
+\begin{equation}
+\mathrm{LBP}_{P,R}(u,v) \;=\; \sum_{p=0}^{P-1} s\!\Big(x_p - x_c\Big)\,2^p, 
+\qquad s(\Delta) = \begin{cases}
+1 & \Delta \ge 0,\\
+0 & \Delta < 0,
+\end{cases}
+\label{eq:lbp}
+\end{equation}
+donde $x_c=x(u,v)$ y $x_p=x(u+R\cos\frac{2\pi p}{P},\, v+R\sin\frac{2\pi p}{P})$. Para \emph{LBP uniforme}, se agrupan códigos con $\le 2$ transiciones 0--1 circulares (rotación-invariantes) en $P+2$ clases, reduciendo dimensionalidad y sensibilidad angular.
+
+\paragraph{Histograma LBP y momentos.} El \emph{histograma normalizado} $h[k]$ se computa sobre toda la imagen o sobre parches:
+\begin{equation}
+h[k] = \frac{1}{N}\sum_{u,v} \mathbf{1}\big\{\mathrm{LBP}_{P,R}(u,v)=k\big\}, 
+\quad \sum_{k} h[k]=1,
+\end{equation}
+donde $N$ es el número de píxeles válidos. Se extraen \textbf{momentos} robustos al brillo global: \emph{energía} $E_\text{LBP}=\sum_k h[k]^2$, \emph{entropía} $H_\text{LBP}=-\sum_k h[k]\log h[k]$, \emph{contraste} $C_\text{LBP}=\sum_k (k-\bar{k})^2 h[k]$ (con $\bar{k}=\sum_k k\,h[k]$). Hologramas con \emph{franjas finas y definidas} (propias de morfologías elongadas/AF) exhiben mayor $H_\text{LBP}$ y $C_\text{LBP}$ que patrones más suaves/circulares. El LBP es \emph{invariante a traslación} y, tras estandarización $z$-score de intensidades y uso de versiones \emph{uniforme/rot-invar}, es relativamente robusto a variaciones de iluminación y orientación.
+
+\paragraph{Multiescala y \emph{patching}.} Para capturar estructuras a distintas escalas (periodos de franja), concatenamos LBP con $(P,R)\in\{(8,1),(16,2),(24,3)\}$ y, si se desea, aplicamos \emph{spatial pyramids} sobre parches no superpuestos (por ejemplo, $2\times2$) y promediamos. Esto preserva \emph{parquedad}: tensores pequeños con fuerte capacidad descriptiva, esencial con $N$ reducido.
+
+%-----------------------------------------------------------
+\subsection{Co-ocurrencia de niveles de gris: GLCM}
+\label{subsec:glcm}
+
+La \emph{matriz de co-ocurrencia} $P(i,j\,|\,d,\theta)$ registra la frecuencia (normalizada) con que un par de niveles $(i,j)$ aparece a una distancia $d$ y ángulo $\theta$ en la imagen cuantizada a $L$ niveles:
+\begin{equation}
+P(i,j\,|\,d,\theta) \;=\; \frac{1}{Z}\,\big|\{(u,v): x(u,v)=i,\ x(u',v')=j\}\big|,
+\end{equation}
+con $(u',v')=(u+\Delta_x,\,v+\Delta_y)$, $\Delta_x=d\cos\theta$, $\Delta_y=d\sin\theta$, y $Z$ un factor de normalización que asegura $\sum_{i,j}P(i,j)=1$. Para robustez se promedian cuatro orientaciones $\theta\in\{0^\circ,45^\circ,90^\circ,135^\circ\}$ y varios desplazamientos $d\in\{1,2,4\}$:
+\[
+\bar{P}(i,j) \;=\; \frac{1}{|\mathcal{D}||\Theta|}\sum_{d\in\mathcal{D}}\sum_{\theta\in\Theta} P(i,j\,|\,d,\theta).
+\]
+A partir de $\bar{P}$ se derivan \emph{estadísticos de segundo orden}:
+\begin{align}
+\text{Energía} &:\quad \mathrm{ENE}=\sum_{i,j}\bar{P}(i,j)^2,\\
+\text{Contraste} &:\quad \mathrm{CON}=\sum_{i,j}(i-j)^2\,\bar{P}(i,j),\\
+\text{Homogeneidad} &:\quad \mathrm{HOM}=\sum_{i,j}\frac{\bar{P}(i,j)}{1+|i-j|},\\
+\text{Correlación} &:\quad \mathrm{COR}=\frac{\sum_{i,j}(i-\mu_i)(j-\mu_j)\bar{P}(i,j)}{\sigma_i\,\sigma_j},\\
+\text{Entropía} &:\quad \mathrm{ENT}=-\sum_{i,j}\bar{P}(i,j)\log \bar{P}(i,j),
+\end{align}
+con $\mu_i=\sum_{i,j}i\,\bar{P}(i,j)$ y $\sigma_i^2=\sum_{i,j}(i-\mu_i)^2\bar{P}(i,j)$ (análogos para $j$). En hologramas AF, la mayor irregularidad y densidad de franjas suelen elevar $\mathrm{CON}$ y $\mathrm{ENT}$, y reducir $\mathrm{HOM}$ respecto a sanos. La \emph{cuantización} previa a $L\in[32,64]$ niveles estabiliza $P$ frente a ruido fino y hace computables matrices densas en tamaño moderado \cite{Kiani2022TextureSurvey}.
+
+%-----------------------------------------------------------
+\subsection{Espectro de Fourier: energía radial y anisotropía angular}
+\label{subsec:fft}
+
+La transformada discreta de Fourier (2D) del holograma $x$ de tamaño $M\times N$ es
+\begin{equation}
+X(k,\ell) \;=\; \sum_{u=0}^{M-1}\sum_{v=0}^{N-1} x(u,v)\, e^{-2\pi i\left(\frac{ku}{M}+\frac{\ell v}{N}\right)},\qquad
+0\le k<M,\quad 0\le \ell<N.
+\end{equation}
+Sea el \emph{espectro de potencia} $S(k,\ell)=|X(k,\ell)|^2$. Tras centrar ($\mathrm{fftshift}$), definimos coordenadas polares discretas $(k_\rho,\varphi)$ en el plano de frecuencias y promediamos \emph{radialmente}:
+\begin{equation}
+P_{\mathrm{rad}}(k_\rho) \;=\; \frac{1}{|\mathcal{A}_{k_\rho}|}\sum_{(k,\ell)\in \mathcal{A}_{k_\rho}} S(k,\ell),
+\end{equation}
+donde $\mathcal{A}_{k_\rho}$ es un anillo (bin) alrededor de $k_\rho$. Caracterizamos:
+\begin{itemize}
+\item \textbf{Picos radiales:} $(k_1,k_2)$ posiciones (y amplitudes) de máximos locales en $P_{\mathrm{rad}}$; en AF se espera $k_1$ superior (franjas más juntas).
+\item \textbf{Energía por bandas:} $E_\text{lo}=\sum_{k_\rho\in B_\text{lo}}P_{\mathrm{rad}}$, $E_\text{mi}$, $E_\text{hi}$; razón $R_{HL}=E_\text{hi}/E_\text{lo}$.
+\item \textbf{Pendiente espectral:} ajuste lineal a $\log P_{\mathrm{rad}}$ vs.\ $\log k_\rho$ en banda inercial; pendiente menor (más alta frecuencia) sugiere AF.
+\end{itemize}
+
+Para \emph{anisotropía angular}, integramos radialmente sobre anillos y analizamos la distribución angular $A(\varphi)$:
+\begin{equation}
+A(\varphi) \;=\; \sum_{k_\rho\in B}\, S\big(k_\rho,\varphi\big),\qquad 
+\mathrm{ANI} \;=\; \frac{\mathrm{Var}_\varphi\!\big(A(\varphi)\big)}{\big(\mathbb{E}_\varphi[A(\varphi)]\big)^2}.
+\end{equation}
+También empleamos \emph{momentos de Fourier angulares} (p.~ej., $m=2,4$) como magnitudes de componentes periódicas $e^{im\varphi}$; valores altos del modo $m=2$ indican elipticidad en el patrón. Estas medidas son \emph{rot-invariantes} si se usa la varianza sobre $\varphi$ (no la fase), y \emph{traslación-invariantes} por construcción (magnitud de $X$).
+
+\paragraph{Normalización y rejilla.} Para hacer comparables espectros entre sensores, se expresan frecuencias en fracciones de \emph{Nyquist} $k_\mathrm{NQ}=\pi/p$ (tamaño de píxel $p$). La rejilla $(k,\ell)$ se convierte a $k_\rho/k_\mathrm{NQ}$ en $[0,1]$, y los anillos se toman log-espaciados para capturar mejor anillos finos en altas frecuencias (densidad espectral).
+
+%-----------------------------------------------------------
+\subsection{Medidas geométricas complementarias}
+\label{subsec:shape}
+
+Aunque evitamos reconstrucción, ciertos \emph{indicadores globales} del patrón en $I(\mathbf{r})$ ayudan a captar desbalance direccional:
+\begin{itemize}
+\item \textbf{Asimetría hemisférica} en torno al máximo central: diferencia relativa entre integrales en semiplanos horizontal/vertical.
+\item \textbf{Invariantes de Hu} de bajo orden sobre un mapa suavizado: $I_1=\eta_{20}+\eta_{02}$, $I_2=(\eta_{20}-\eta_{02})^2+4\eta_{11}^2$, con $(\eta_{pq})$ momentos normalizados. En patrones muy elípticos aumenta $I_2$.
+\end{itemize}
+Se emplean con \emph{parquedad} (5--6 medidas) para no sobreponderar rasgos sensibles a orientación/ruido.
+
+%===========================================================
+\section{Fundamentos estadísticos para pocos datos}
+\label{sec:estadistica}
+
+La validez de las conclusiones con $N$ modesto exige un \emph{diseño estadístico} que reduzca sesgo y cuantifique incertidumbre. Adoptamos preprocesos y evaluaciones con base en evidencia metodológica reciente \cite{Tsamardinos2022Patterns}.
+
+%-----------------------------------------------------------
+\subsection{Estandarización y \emph{data hygiene}}
+\label{subsec:scaling}
+
+Cada rasgo $z_j$ se estandariza por pliegue con media y desviación del \emph{entrenamiento} (para evitar fugas de información):
+\begin{equation}
+z_j \;=\; \frac{x_j - \mu_j^\text{(train)}}{\sigma_j^\text{(train)}+\epsilon},\qquad \epsilon>0.
+\end{equation}
+Para GLCM, la \emph{cuantización} a $L$ niveles se ajusta por pliegue. El pipeline se construye como \emph{transformaciones puras} (scikit-learn: \texttt{Pipeline}) para asegurar \emph{encapsulamiento} y reproducibilidad.
+
+%-----------------------------------------------------------
+\subsection{Validación cruzada anidada}
+\label{subsec:nested}
+
+Sean $K_\text{out}$ pliegues externos (estimación) y $K_\text{in}$ internos (selección). Para cada pliegue externo $t=1,\dots,K_\text{out}$:
+\begin{enumerate}
+\item Separar \emph{entrenamiento externo} $\mathcal{T}_t$ y \emph{prueba externa} $\mathcal{S}_t$.
+\item En $\mathcal{T}_t$, realizar búsqueda de hiperparámetros $\Theta$ con CV interna $K_\text{in}$ (p.\,ej., maximizar AUC-ROC).
+\item Ajustar el modelo $f_{\hat{\theta}_t}$ sobre $\mathcal{T}_t$ completo y \emph{predecir} puntajes $s_i$ en $\mathcal{S}_t$.
+\end{enumerate}
+La concatenación de predicciones $\{(s_i,y_i)\}_{i=1}^N$ \emph{out-of-fold} produce estimaciones imparciales de AUC/AUPRC y permite \emph{IC95\%} por bootstrap (resampleo de pares $(s_i,y_i)$ con reemplazo, $B\sim 2000$).
+
+\paragraph{Sesgo evitado.} Sin anidamiento, el hiperparámetro que maximiza AUC interno se evalúa en el mismo conjunto, produciendo \emph{optimismo} (sobreajuste de selección). El esquema anidado separa selección y evaluación, mejorando la \emph{honestidad} del estimador \cite{Tsamardinos2022Patterns}.
+
+%-----------------------------------------------------------
+\subsection{Métricas, umbrales y costo clínico}
+\label{subsec:metrics}
+
+\paragraph{Confusión y tasas.} Con umbral $\tau$ sobre el puntaje $s$, definimos:
+\[
+\mathrm{TPR}=\frac{\mathrm{TP}}{\mathrm{TP}+\mathrm{FN}},\quad 
+\mathrm{TNR}=\frac{\mathrm{TN}}{\mathrm{TN}+\mathrm{FP}},\quad
+\mathrm{PPV}=\frac{\mathrm{TP}}{\mathrm{TP}+\mathrm{FP}},\quad
+\mathrm{NPV}=\frac{\mathrm{TN}}{\mathrm{TN}+\mathrm{FN}},
+\]
+\[
+\mathrm{ACC}_b=\frac{\mathrm{TPR}+\mathrm{TNR}}{2},\qquad
+\mathrm{F1}=\frac{2\,\mathrm{TP}}{2\,\mathrm{TP}+\mathrm{FP}+\mathrm{FN}}.
+\]
+Se informan \textbf{AUC-ROC} y \textbf{AUPRC} a partir de los puntajes $\{s_i\}$ como métricas de ranking independientes de $\tau$ (AUPRC es más informativa con clases desbalanceadas).
+
+\paragraph{Selección de $\tau$ por utilidad clínica.} Con prevalencia $\pi=P(y{=}1)$ y matriz de costos $C(y,\hat{y})$, el \emph{riesgo esperado} de un umbral $\tau$ es
+\begin{equation}
+\mathcal{L}(\tau) \;=\; \pi\left[ C(1,0)\,\mathrm{FNR}(\tau) + C(1,1)\,\mathrm{TPR}(\tau)\right] 
++ (1-\pi)\left[ C(0,1)\,\mathrm{FPR}(\tau) + C(0,0)\,\mathrm{TNR}(\tau)\right].
+\end{equation}
+Elegimos $\tau^\ast=\arg\min_\tau \mathcal{L}(\tau)$ o, en ausencia de costos explícitos, el punto de \emph{Youden} $J=\max_\tau \{\mathrm{TPR}(\tau)-\mathrm{FPR}(\tau)\}$, típico en cribado donde se prioriza sensibilidad.
+
+\paragraph{Calibración de probabilidades.} Para reportar probabilidades confiables, se evalúa \emph{Brier score} y curvas de confiabilidad; si procede, se aplica \emph{Platt scaling} (sigmoide) o \emph{isotonic regression} sobre predicciones de CV externa para evitar sobreajuste en calibración.
+
+%-----------------------------------------------------------
+\subsection{Pruebas de hipótesis y tamaño del efecto}
+\label{subsec:hypothesis}
+
+Para contrastar \textbf{H1--H2} (Sec.~\ref{sec:hipotesis}), se comparan distribuciones de rasgos entre clases:
+\begin{itemize}
+\item Paramétrico: $t$ de Welch sobre $k_1$, $R_{HL}$, $H_\text{LBP}$, $\mathrm{CON}$, $\mathrm{HOM}$.
+\item No paramétrico: Mann–Whitney $U$ si hay asimetrías marcadas.
+\end{itemize}
+Se reporta \emph{tamaño del efecto} (Cohen $d$, Cliff $\delta$) y se controla multiplicidad (FDR de Benjamini–Hochberg, $q\le 0.10$) para familias de pruebas. Con $N$ modesto, priorizamos \emph{intervalos de confianza} (bootstrap percentil/BCa) sobre $d$ y diferencias de medianas, por su mayor interpretabilidad.
+
+%-----------------------------------------------------------
+\subsection{Modelos candidatos e interpretabilidad}
+\label{subsec:models}
+
+\paragraph{SVM con kernel RBF.} El clasificador $f(\mathbf{z})=\mathrm{sign}\!\big(\sum_i \alpha_i y_i\,K(\mathbf{z},\mathbf{z}_i)+b\big)$ con $K(\mathbf{z},\mathbf{z}')=\exp(-\gamma\|\mathbf{z}-\mathbf{z}'\|^2)$ maximiza margen suavizado controlado por $C$:
+\[
+\min_{\alpha}\ \frac{1}{2}\sum_{i,j}\alpha_i\alpha_j y_i y_j K(\mathbf{z}_i,\mathbf{z}_j) - \sum_i \alpha_i,\quad 0\le \alpha_i\le C,\ \sum_i \alpha_i y_i=0.
+\]
+Con rasgos parcos y bien escalados, SVM-RBF captura fronteras suaves y es poco proclive al sobreajuste si $\gamma$ y $C$ se seleccionan con CV interna. Para probabilidades, empleamos \emph{Platt scaling} fuera del ajuste.
+
+\paragraph{Random Forest (RF).} Promedia árboles de decisión entrenados sobre \emph{subconjuntos aleatorios} de rasgos y datos, reduciendo varianza. Entrega \emph{importancias} por reducción de impureza y, preferiblemente, \emph{importancias por permutación} (menos sesgadas). Con $n_\text{trees}\sim 100$--$300$ y \emph{max\_depth} controlado, RF es robusto a interacciones no lineales y covarianzas entre rasgos.
+
+\paragraph{Redes ligeras (baseline).} Una CNN compacta con transferencia (e.g., MobileNetV3-S) sobre hologramas reescalados puede servir de referencia, pero con $N$ modesto tiende a varianzas altas y menor interpretabilidad. Se usa sólo como comparación, priorizando el enfoque de \emph{rasgos físico–estadísticos} \cite{Alzubaidi2020Electronics}.
+
+\paragraph{SHAP y parquedad.} Para interpretar SVM/RF, usamos \emph{valores de Shapley}:
+\begin{equation}
+\phi_j \;=\; \sum_{S\subseteq F\setminus\{j\}} \frac{|S|!\,(|F|-|S|-1)!}{|F|!}\,\Big[f(S\cup\{j\})-f(S)\Big],
+\end{equation}
+aproximados por \emph{KernelSHAP} sobre el clasificador final. Un \emph{top-10} de rasgos por $|\phi_j|$ guía una versión parsimoniosa de $\phi(x)$ manteniendo AUC (H4). La interpretación física emergente debe alinear: $k_1$, $R_{HL}$ y $H_\text{LBP}$ altos $\Rightarrow$ AF; $\mathrm{HOM}$ alta $\Rightarrow$ sano.
+
+%-----------------------------------------------------------
+\subsection{Incertidumbre, IC y reporte reproducible}
+\label{subsec:uncertainty}
+
+Sobre predicciones \emph{out-of-fold} generamos IC95\% de AUC/AUPRC por bootstrap ($B{=}2000$ réplicas). Para curvas ROC, se puede reportar \emph{bandas de confianza} punto a punto o IC del \emph{índice de Youden}. Todas las decisiones (semillas, versiones, hiperparámetros) se registran (\texttt{config.json}/\texttt{MLflow}), y se preservan \emph{pipelines} entrenados (\texttt{joblib}) con hashes de integridad. Esto responde a \emph{reproducibilidad fuerte} y auditoría clínica.
+
+%===========================================================
+\section{Conexión física–estadística: síntesis}
+\label{sec:conexion}
+
+Los descriptores propuestos \emph{median} la física de difracción hacia \emph{resúmenes estadísticos} compactos e interpretables:
+\begin{itemize}
+\item \textbf{LBP/GLCM} $\Rightarrow$ cuantifican el orden/desorden local de franjas (microcontraste). AF: $H_\text{LBP}\!\uparrow$, $\mathrm{CON}\!\uparrow$, $\mathrm{HOM}\!\downarrow$.
+\item \textbf{FFT radial} $\Rightarrow$ relaciona tamaño/elongación con la \emph{escala de franjas} (picos $k_1,k_2$) y su energía $R_{HL}$. AF: $k_1\!\uparrow$, $R_{HL}\!\uparrow$.
+\item \textbf{Anisotropía} $\Rightarrow$ cuantifica direccionalidad del patrón; AF: $\mathrm{ANI}\!\uparrow$ y modos angulares $m{=}2,4$ más energéticos.
+\end{itemize}
+Esta triada \emph{física $\to$ estadística $\to$ aprendizaje} preserva \emph{invariancias} (traslación/rotación relativas) y \emph{parquedad}, maximizando la razón señal/ruido en regímenes de pocos datos, a la vez que habilita explicaciones poste\-riori (SHAP) coherentes con el modelo óptico \cite{Greenbaum2014STM,Chen2022Photonics,Tsamardinos2022Patterns}.
+
+%===========================================================
+% Referencias clave:
+%   Zhou2019MedImageContrast (CLAHE)
+%   Kiani2022TextureSurvey (texturas médicas LBP/GLCM)
+%   Alzubaidi2020Electronics (DL en SCA)
+%   Chen2022Photonics (resolución/contraste en holografía)
+%   Greenbaum2014STM (on-chip holography)
+%   Tsamardinos2022Patterns (validación/estimación con pocos datos)
+%===========================================================

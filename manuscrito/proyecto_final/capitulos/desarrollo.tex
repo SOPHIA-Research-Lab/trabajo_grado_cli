@@ -1,0 +1,60 @@
+\chapter{Desarrollo experimental y de ingeniería}\label{chap:desarrollo}
+Este capítulo detalla el proceso de construcción del sistema, las decisiones de diseño adoptadas durante la implementación y las iteraciones realizadas para alcanzar un pipeline robusto y reproducible.
+
+\section{Estructura del repositorio}
+El proyecto se organizó siguiendo principios de ingeniería de software reproducible. La raíz del repositorio contiene un archivo \texttt{cli.py} que centraliza las operaciones de entrenamiento, validación y análisis individual. La carpeta \texttt{src} alberga tres módulos principales: \texttt{hologram\_analysis.py}, que implementa el flujo de procesamiento y las rutinas de entrenamiento; \texttt{anomaly\_detector.py}, que encapsula el cálculo de la distancia de Mahalanobis y las funciones de interpretación; y \texttt{dataset\_unifier.py}, responsable de crear el dataset unificado a partir de las colecciones originales. Adicionalmente, se proveen scripts utilitarios como \texttt{run\_analysis.py} para ejecutar el pipeline completo con un solo comando y archivos de ejemplo para análisis de imágenes individuales.
+
+La carpeta \texttt{data} aloja las colecciones originales y el dataset unificado generado. Para asegurar trazabilidad, cada ejecución del unificador crea un archivo resumen con el número de imágenes procesadas, las dimensiones promedio y el tiempo insumido en cada fase. La carpeta \texttt{results} mantiene modelos entrenados, métricas en formato CSV, reportes de texto y figuras. Finalmente, el directorio \texttt{holograms} contiene las muestras externas empleadas para evaluar la detección de anomalías. Esta disposición facilita el seguimiento de versiones y la integración de nuevos experimentos.
+
+\section{Diseño del pipeline}
+El flujo de trabajo del sistema se compone de nueve etapas principales:
+\begin{enumerate}
+    \item Lectura de la configuración desde \texttt{config.yaml}, donde se definen parámetros como modo de ejecución, número máximo de características y opciones de visualización.
+    \item Verificación de la existencia del dataset unificado; en caso negativo, se invoca automáticamente el módulo de unificación.
+    \item Carga de hologramas y etiquetas mediante estructuras \texttt{pandas} para asegurar trazabilidad.
+    \item Extracción de características y almacenamiento en cache. Si los archivos ya existen, se reutilizan para acelerar futuras ejecuciones.
+    \item Normalización de características y selección de atributos relevantes según el modo operativo.
+    \item Entrenamiento de modelos base y ensamblaje de las predicciones.
+    \item Validación cruzada, cálculo de métricas y generación de interpretabilidades basadas en Cohen's $d$.
+    \item Generación de visualizaciones: matriz de confusión, curva ROC, comparativa de modelos y mapas de calor de contribuciones.
+    \item Entrenamiento o actualización del detector de anomalías y almacenamiento del archivo \texttt{anomaly\_detector.pkl}.
+\end{enumerate}
+Cada etapa produce registros detallados en consola y en archivos de log, lo que favorece el seguimiento de errores y el análisis post mortem. Las marcas temporales y los identificadores de ejecución se incorporan en los nombres de archivo para vincular métricas, modelos y visualizaciones.
+
+\section{Modos de operación}
+Se definieron tres modos para adaptarse a distintos escenarios de uso:
+\begin{description}
+    \item[Modo rápido] Selecciona hasta 20 características, deshabilita la optimización avanzada de hiperparámetros y limita la validación cruzada a parámetros conservadores. Se utiliza para pruebas preliminares y verificación de la integridad del pipeline.
+    \item[Modo completo] Mantiene la configuración por defecto del archivo \texttt{config.yaml}, que incluye optimización moderada de hiperparámetros, selección de 35 características y generación de visualizaciones detalladas.
+    \item[Modo profundo] Amplía la búsqueda de hiperparámetros, aumenta el número de características seleccionadas a 50 y activa iteraciones adicionales para evaluar la estabilidad de la selección. Este modo se emplea para obtener métricas finales y analizar la sensibilidad del modelo.
+\end{description}
+Estos modos se invocan desde la CLI mediante \texttt{python cli.py analyze --mode \{quick, full, deep\}} y pueden complementarse con argumentos como \texttt{--features} para fijar el número máximo de características o \texttt{--no-cache} para forzar la reconstrucción de descriptores. También se dispone de la opción \texttt{--show-config} para visualizar los parámetros activos antes de iniciar el análisis. Durante las pruebas documentadas en este trabajo se utilizaron los modos rápido y profundo para construir los análisis comparativos.
+
+\section{Automatización de reportes}
+El pipeline genera automáticamente un archivo \texttt{analysis\_report.txt} con un resumen narrativo del desempeño del modelo, las características seleccionadas y las métricas principales. Los reportes individuales de imágenes incluyen datos de predicción, confianza, probabilidades por clase, tamaño de la imagen y ranking de características discriminativas. Las visualizaciones se guardan con sellos de tiempo para diferenciar ejecuciones y facilitar la trazabilidad.
+
+\section{Integración del detector de anomalías}
+El detector de Mahalanobis se entrena al finalizar el proceso de clasificación. Con el objetivo de evitar recalcular la matriz de covarianza en cada ejecución, el archivo serializado se almacena en \texttt{results/anomaly\_detector.pkl}. Si el usuario ejecuta el pipeline nuevamente, el sistema intenta cargar el detector existente y únicamente lo recalcula cuando se modifican las características o se detecta una inconsistencia. Esta decisión reduce tiempos de cómputo y asegura consistencia en las evaluaciones fuera de dominio.
+
+Para evaluar organismos no sanguíneos se implementó el comando \texttt{python cli.py validate --image-dir ./holograms}. Esta función recorre cada subcarpeta, procesa hasta diez imágenes por categoría y genera un reporte consolidado con las distancias de Mahalanobis. El sistema etiqueta cada muestra como anomalía o no, registra la clase predicha por el ensamble y produce un mapa de calor que resume la distribución de distancias. El reporte en formato CSV incluye probabilidades por clase, distancia, p-value y contribuciones principales, lo que permite auditorías detalladas.
+
+\section{Consideraciones de desempeño}
+Durante las pruebas en un equipo con procesador de ocho núcleos y 16~GB de RAM, el modo rápido completó el análisis en menos de 30 segundos, mientras que el modo profundo tomó alrededor de tres minutos. El tiempo más demandante corresponde a la validación Leave-One-Out, que requiere entrenar el modelo 304 veces. Para mitigar este costo se habilitó el uso de múltiples núcleos mediante la librería \texttt{joblib}. Asimismo, las características se guardan en cache para evitar recalculaciones costosas.
+
+\section{Gestión de configuraciones}
+El archivo \texttt{config.yaml} centraliza parámetros clave como rutas de datos, tamaño de imagen objetivo, opciones de visualización y tolerancia de anomalías. Esta configuración se carga al iniciar el análisis y puede modificarse en tiempo de ejecución mediante la CLI. Registrar y versionar estos ajustes resulta fundamental para garantizar reproducibilidad y permitir comparaciones entre experimentos.
+
+\section{Retos enfrentados}
+Durante el desarrollo se afrontaron tres desafíos principales. Primero, la instalación de dependencias en entornos sin conexión directa obligó a encapsular el proyecto en entornos virtuales y documentar los pasos para su despliegue. Segundo, el tamaño limitado del dataset demandó estrategias de validación conservadoras para evitar conclusiones optimistas. Tercero, la ausencia de parámetros ópticos exactos del montaje impidió modelar la respuesta del sistema mediante simulaciones físicas, por lo que se priorizaron análisis empíricos y comparaciones con literatura publicada. Cada reto se abordó reforzando la documentación, automatizando tareas repetitivas y registrando supuestos explícitos en los reportes.
+\section{Cronograma de iteraciones}
+El desarrollo se estructuró en cuatro fases. La primera comprendió la curaduría de datos y la creación del unificador, garantizando consistencia geométrica entre hologramas. La segunda se centró en la extracción de características y la construcción de prototipos de clasificación; en esta etapa se definieron los modos rápido y completo. La tercera correspondió a la integración del detector de anomalías y a la generación de reportes automatizados, mientras que la cuarta consolidó la documentación, la validación externa y la preparación del manuscrito. Cada fase quedó registrada mediante etiquetas de Git y actas semanales que describen avances, decisiones y tareas pendientes.
+
+\section{Pruebas automatizadas y verificación continua}
+Aunque el alcance del proyecto no incluye una batería de pruebas extensa, se implementaron verificaciones unitarias básicas para garantizar el correcto funcionamiento de funciones críticas, como la creación del cache, la carga de configuraciones y la detección de anomalías ante entradas sintéticas. Además, antes de cada corrida larga se ejecutó el modo rápido como “smoke test” para confirmar que no existían regresiones. Los resultados de estas pruebas se documentaron en el cuaderno electrónico del repositorio, lo que permitió rastrear incidentes y justificar cambios en parámetros.
+
+\section{Estrategia de empaquetado y despliegue}
+El código se distribuye como un paquete Python autocontenible. Se incluyen archivos \texttt{requirements.txt} y \texttt{environment.yml} para facilitar la recreación del entorno, además de instrucciones para ejecutar el proyecto dentro de un contenedor ligero. Esta estrategia acelera la transferencia a otros laboratorios y evita problemas comunes de dependencia. También se configuraron reglas de \texttt{.gitignore} para evitar versionar modelos pesados o datos sensibles, promoviendo buenas prácticas de gestión de información.
+\section{Documentación y soporte}
+Con el fin de facilitar la adopción por parte de nuevos investigadores, se redactaron guías en formato Markdown que explican la instalación de dependencias, la ejecución del pipeline y la interpretación de resultados. Se mantienen versiones en español y en inglés para favorecer colaboraciones internacionales. Cada guía enlaza a los comandos más relevantes y describe posibles errores comunes junto a sus soluciones.
+
+Asimismo, se diseñó un flujo de soporte que registra incidencias técnicas y propuestas de mejora. Las incidencias se etiquetan según su impacto (crítico, mayor, menor) y se priorizan en reuniones semanales con el tutor del proyecto. Este mecanismo permitió detectar tempranamente problemas de compatibilidad de librerías y ajustar las configuraciones antes de realizar las corridas finales documentadas en este manuscrito.

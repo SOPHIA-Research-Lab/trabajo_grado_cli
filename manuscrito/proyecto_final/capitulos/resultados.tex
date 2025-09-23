@@ -1,0 +1,128 @@
+\chapter{Resultados y análisis}\label{chap:resultados}
+En este capítulo se presentan los hallazgos cuantitativos y cualitativos derivados de la ejecución del pipeline en los modos rápido y profundo, así como la evaluación del detector de anomalías sobre hologramas externos. Se incluyen tablas comparativas, visualizaciones clave y una discusión crítica del desempeño alcanzado.
+
+\section{Rendimiento del clasificador}
+La Tabla~\ref{tab:metricas-globales} resume las métricas principales obtenidas en los modos rápido y profundo. El modo rápido procesa 20 características seleccionadas y omite la optimización exhaustiva de hiperparámetros. Aun con estas restricciones, alcanza una exactitud del 95,1~\% y un AUC de 0,989. El modo profundo expande la selección a 50 características, activa una búsqueda más amplia de hiperparámetros y ejecuta validación Leave-One-Out, logrando un AUC de 0,995 y una exactitud de prueba del 93,4~\%. Aunque la exactitud baja levemente respecto al modo rápido, el análisis profundo ofrece varianzas menores y evidencia de estabilidad estadística.
+
+\begin{table}[H]
+    \centering
+    \caption{Comparativo de métricas globales por modo de ejecución.}
+    \label{tab:metricas-globales}
+    \begin{tabular}{lcccc}
+        \toprule
+        Modo & Exactitud test & AUC ROC & CV Accuracy (media $\pm$ DE) & LOOCV Accuracy \\
+        \midrule
+        Rápido & 0,951 & 0,989 & $0,934 \pm 0,020$ & -- \\
+        Profundo & 0,934 & 0,995 & $0,954 \pm 0,013$ & 0,974 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+El reporte generado por el modo profundo indica que el ensamble retiene un alto nivel de generalización incluso bajo esquemas de validación exigentes: la validación cruzada estratificada presenta desviaciones estándar inferiores al 2~\%, y la validación Leave-One-Out comete 8 errores sobre 304 hologramas. Esta estabilidad sugiere que las características seleccionadas capturan patrones robustos y que la combinación de clasificadores evita sobreajustes graves.
+
+Para profundizar en la estadística de los pliegues, la Tabla~\ref{tab:metricas-cv} recoge los promedios y desviaciones estándar de AUC y exactitud durante la validación cruzada, junto con el desempeño obtenido en LOOCV para el modo profundo.
+
+\begin{table}[H]
+    \centering
+    \caption{Resumen de validación cruzada y Leave-One-Out.}
+    \label{tab:metricas-cv}
+    \begin{tabular}{lccc}
+        \toprule
+        Modo & AUC CV (media $\pm$ DE) & Acc. CV (media $\pm$ DE) & LOOCV (Acc., errores) \\
+        \midrule
+        Rápido & $0,990 \pm 0,007$ & $0,934 \pm 0,020$ & -- \\
+        Profundo & $0,992 \pm 0,005$ & $0,954 \pm 0,013$ & $0,974$, 8/304 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+La consistencia entre los pliegues y el bajo número de errores en LOOCV son indicios de que el ensamble no depende de observaciones aisladas. Para cuantificar la incertidumbre, se calcularon intervalos de confianza mediante bootstrap, los cuales se discuten en la Sección~\ref{sec:discusion-resultados}.
+
+La matriz de confusión correspondiente al modo profundo (Figura~\ref{fig:confusion}) muestra un equilibrio entre falsos positivos y falsos negativos. Los errores se concentran en hologramas con texturas casi circulares pero con leves irregularidades, lo que evidencia la dificultad de separar casos limítrofes aun con descriptores ricos. La curva ROC (Figura~\ref{fig:roc}) evidencia un área bajo la curva de 0,995, equivalente a un clasificador que mantiene sensibilidad y especificidad superiores al 95~\% para umbrales intermedios.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{../../results/confusion_matrix.png}
+    \caption{Matriz de confusión producida en el modo profundo.}
+    \label{fig:confusion}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{../../results/roc_curve.png}
+    \caption{Curva ROC del ensamble entrenado en modo profundo.}
+    \label{fig:roc}
+\end{figure}
+
+\section{Importancia de características}
+El análisis de Cohen's $d$ revela que la correlación GLCM, la extensión y la solidez son los descriptores más discriminativos, seguidos por la razón de área convexa y el primer momento de Hu. Estos resultados son coherentes con la física del fenómeno: las células falciformes generan patrones menos compactos y con orientaciones preferenciales que alteran la solidez aparente del holograma, mientras que las células sanas conservan simetrías circulares.
+
+La Figura~\ref{fig:feature-importance} muestra la distribución de importancias calculada por el modelo, destacando cómo las características de textura (GLCM y LBP) se combinan con medidas morfológicas para explicar la decisión. El análisis se complementa con la Figura~\ref{fig:model-comparison}, donde se presenta el desempeño individual de cada clasificador respecto al ensamble, confirmando que la combinación ponderada supera consistentemente a los modelos por separado. La interpretación cualitativa confirma que el ensamble captura múltiples niveles de información, lo que reduce el riesgo de depender de un único descriptor.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{../../results/feature_distributions.png}
+    \caption{Distribución de las características más discriminativas según Cohen's $d$.}
+    \label{fig:feature-importance}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{../../results/model_comparison.png}
+    \caption{Comparativa de desempeño entre los clasificadores base y el ensamble final.}
+    \label{fig:model-comparison}
+\end{figure}
+
+\section{Análisis estadístico complementario}
+Se calculó la desviación estándar de las probabilidades emitidas por el ensamble para cada muestra del conjunto de prueba. Las muestras correctamente clasificadas exhiben desviaciones menores a 0,08, lo que indica consenso entre los clasificadores base. En cambio, los falsos positivos y falsos negativos presentan desviaciones superiores a 0,15, señal de desacuerdo interno. Esta métrica permite priorizar la revisión manual de casos dudosos. Adicionalmente, se estimaron intervalos de confianza del 95~\% mediante 1~000 remuestreos bootstrap, obteniendo para el modo profundo un rango de exactitud entre 91,8~\% y 95,0~\%, y de AUC entre 0,991 y 0,998. Estos intervalos se alinean con los valores reportados en las Tablas~\ref{tab:metricas-globales} y \ref{tab:metricas-cv}.
+
+\section{Validación fuera de dominio}
+La evaluación del detector de anomalías sobre el conjunto externo \textit{holograms} produjo 30/30 detecciones positivas (100~\%). Las distancias de Mahalanobis oscilaron entre 75,98 y 155,54, con una media de 110,85, muy por encima del umbral de 9,89 establecido durante el entrenamiento. La Tabla~\ref{tab:anomalias} resume las estadísticas por categoría y evidencia que el detector responde con distancias significativamente superiores al umbral establecido.
+
+\begin{table}[H]
+    \centering
+    \caption{Resultados de la detección de anomalías en el conjunto externo.}
+    \label{tab:anomalias}
+    \begin{tabular}{lccc}
+        \toprule
+        Categoría externa & Imágenes analizadas & Distancia media & Tasa de anomalías \\
+        \midrule
+        \textit{8	extunderscore Poaceae} & 10 & 85,3 & 100~\% \\
+        \textit{2	extunderscore Aspergillus} & 10 & 142,1 & 100~\% \\
+        \textit{3	extunderscore Diatom} & 10 & 105,2 & 100~\% \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+La Figura~\ref{fig:anomalias} ilustra la distribución de distancias registradas durante la validación externa. Cada punto está marcado con el score de anomalía normalizado, que alcanza el valor máximo de 1 para todos los casos. Este comportamiento evidencia que el detector distingue con claridad los hologramas fuera del dominio de eritrocitos, incluso cuando el clasificador principal asigna probabilidades altas a una de las clases entrenadas. El mapa de calor generado (Figura~\ref{fig:heatmap}) ofrece una perspectiva adicional sobre la intensidad de las distancias en el espacio de características y permite identificar qué muestras se aproximan más al umbral a pesar de ser consideradas anomalías.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{../../results/anomaly_analysis_20250916_162926.png}
+    \caption{Distribución de distancias de Mahalanobis para muestras externas.}
+    \label{fig:anomalias}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{../../results/prediction_heatmap_20250916_162926.png}
+    \caption{Mapa de calor de predicciones y distancias para organismos no sanguíneos.}
+    \label{fig:heatmap}
+\end{figure}
+
+\section{Comparación con antecedentes}
+Las métricas obtenidas se contrastaron con reportes recientes de la literatura. Buitrago-Duque \textit{et al.} documentaron precisiones cercanas al 90~\% utilizando reconstrucción holográfica y clasificadores basados en redes neuronales \cite{BuitragoDuque2023}. O'Connor \textit{et al.} alcanzaron AUC superiores a 0,97 en tareas holográficas con CNN, aunque con datasets más extensos y hardware especializado \cite{OConnor2020}. El desempeño del ensamble propuesto se sitúa dentro de ese rango, con la ventaja de que requiere menos datos, puede ejecutarse en CPU y ofrece interpretabilidad explícita. Además, la detección de anomalías no suele reportarse en estudios previos, por lo que constituye un valor añadido al prevenir clasificaciones espurias en presencia de contaminantes.
+
+\section{Sensibilidad a hiperparámetros}
+Se evaluó la influencia de parámetros clave mediante corridas controladas. Reducir el número máximo de características a 10 disminuye la exactitud en 3 puntos porcentuales, principalmente por la pérdida de información en los descriptores morfológicos. Incrementar el umbral de Mahalanobis al percentil 97,5 reduce los falsos positivos en datos externos, pero incrementa la probabilidad de aceptar hologramas no sanguíneos con probabilidades altas; por ello se mantuvo el percentil 95 como compromiso entre sensibilidad y especificidad. También se experimentó con pesos alternativos en la votación del ensamble, constatando que ponderar en función del AUC individual ofrece un mejor balance que utilizar pesos uniformes. Estos análisis demuestran que el pipeline puede ajustarse a distintos contextos operativos sin sacrificar interpretabilidad.
+
+\section{Discusión}\label{sec:discusion-resultados}
+Los resultados confirman que la combinación de descriptores físicos y modelos clásicos es suficiente para alcanzar métricas competitivas sin recurrir a arquitecturas profundas. La pequeña brecha entre los modos rápido y profundo sugiere que la selección de características y la regularización controlan adecuadamente el sobreajuste. El modo profundo aporta evidencias adicionales al integrar LOOCV, lo cual respalda la robustez del sistema frente a la variabilidad del dataset.
+
+En la práctica, la diferencia entre una exactitud del 95~\% y del 93~\% es marginal frente a la posibilidad de correr el pipeline en minutos o segundos dependiendo de la disponibilidad computacional. Por lo tanto, se recomienda utilizar el modo rápido durante fases exploratorias o cuando se deba evaluar continuamente nuevos hologramas, y reservar el modo profundo para reportes formales y calibraciones periódicas.
+
+El detector de anomalías demostró ser particularmente útil al analizar muestras externas. La capacidad de denunciar hologramas ajenos al dominio evita que el sistema proporcione una clasificación errónea con alta confianza, un riesgo habitual en modelos puramente discriminativos \cite{Rousseeuw2019}. Además, las contribuciones por característica permiten al usuario verificar qué tipo de patrones desencadenan la alerta, habilitando decisiones clínicas más informadas.
+
+La evaluación bootstrap y el análisis de desviaciones estándar entre clasificadores base sugieren que el ensamble mantiene un consenso alto para la mayoría de las muestras; los casos conflictivos pueden priorizarse para revisión manual o para enriquecer el dataset con nuevas anotaciones. Esta información se alinea con la literatura que recomienda monitorear la calibración y la incertidumbre antes de desplegar sistemas de apoyo diagnóstico \cite{Montero2024}.
+
+Finalmente, las visualizaciones integradas---matriz de confusión, curvas ROC, histogramas de características y comparativas de modelos---constituyen una base sólida para documentar procesos de validación y cumplir con estándares de trazabilidad. Estas herramientas facilitan la comparación con trabajos previos y con futuras versiones del sistema.
