@@ -7,7 +7,8 @@
 \providecommand{\BIBentrySTDinterwordspacing}{\spaceskip=0pt\relax}
 \providecommand{\BIBentryALTinterwordstretchfactor}{4}
 \providecommand{\BIBentryALTinterwordspacing}{\spaceskip=\fontdimen2\font plus
-\BIBentryALTinterwordstretchfactor\fontdimen3\font minus \fontdimen4\font\relax}
+\BIBentryALTinterwordstretchfactor\fontdimen3\font minus
+  \fontdimen4\font\relax}
 \providecommand{\BIBforeignlanguage}[2]{{%
 \expandafter\ifx\csname l@#1\endcsname\relax
 \typeout{** WARNING: IEEEtran.bst: No hyphenation pattern has been}%
@@ -21,86 +22,109 @@
 \BIBdecl
 
 \bibitem{Arishi2021}
-W.~A. Arishi, H.~A. Alhadrami, and M.~Zourob, ``Techniques for the detection of sickle cell disease: A review,'' \emph{Micromachines}, vol.~12, no.~5, p. 453, 2021.
+W.~A. Arishi, H.~A. Alhadrami, and M.~Zourob, ``Techniques for the detection of
+  sickle cell disease: A review,'' \emph{Micromachines}, vol.~12, no.~5, p.
+  453, 2021.
 
 \bibitem{McGann2017}
-P.~T. McGann and C.~Hoppe, ``The pressing need for point-of-care diagnostics for sickle cell disease: A review of current and future technologies,'' \emph{Blood Cells, Molecules, and Diseases}, vol.~67, pp. 104--113, 2017.
+P.~T. McGann and C.~Hoppe, ``The pressing need for point-of-care diagnostics
+  for sickle cell disease: A review of current and future technologies,''
+  \emph{Blood Cells, Molecules, and Diseases}, vol.~67, pp. 104--113, 2017.
 
 \bibitem{Shrestha2025}
-P.~Shrestha \emph{et~al.}, ``Evaluation of low-cost techniques to detect sickle cell disease and {$\beta$}-thalassemia: an open-label, international, multicentre study,'' \emph{The Lancet Regional Health -- Southeast Asia}, vol.~15, p. 100356, 2025.
+P.~Shrestha \emph{et~al.}, ``Evaluation of low-cost techniques to detect sickle
+  cell disease and {$\beta$}-thalassemia: an open-label, international,
+  multicentre study,'' \emph{The Lancet Regional Health -- Southeast Asia},
+  vol.~15, p. 100356, 2025.
 
 \bibitem{Amann2019}
-S.~Amann, M.~von Witzleben, and S.~Breuer, ``3d-printable portable open-source platform for low-cost lens-less holographic cellular imaging,'' \emph{Scientific Reports}, vol.~9, pp. 1--9, 2019.
+S.~Amann, M.~von Witzleben, and S.~Breuer, ``3d-printable portable open-source
+  platform for low-cost lens-less holographic cellular imaging,''
+  \emph{Scientific Reports}, vol.~9, pp. 1--9, 2019.
 
 \bibitem{BuitragoDuque2023}
-C.~Buitrago-Duque, B.~P. {n}o Jurado, and J.~Garcia-Sucerquia, ``Robust and compact digital lensless holographic microscope for label-free blood smear analysis,'' \emph{HardwareX}, vol.~14, p. e00428, 2023.
+C.~Buitrago-Duque, B.~P. {n}o Jurado, and J.~Garcia-Sucerquia, ``Robust and
+  compact digital lensless holographic microscope for label-free blood smear
+  analysis,'' \emph{HardwareX}, vol.~14, p. e00428, 2023.
+
+\bibitem{Greenbaum2014}
+A.~Greenbaum, W.~Luo, and A.~Ozcan, ``Wide-field computational imaging of
+  pathology slides using lens-free on-chip microscopy,'' \emph{Science
+  Translational Medicine}, vol.~6, no. 267, p. 267ra175, 2014.
 
 \bibitem{Kim2025}
-J.~Kim \emph{et~al.}, ``Single-shot three-dimensional morphology of biological cells in digital holographic microscopy using a physics-driven neural network,'' \emph{Nature Communications}, vol.~16, p. 1123, 2025.
+J.~Kim \emph{et~al.}, ``Single-shot three-dimensional morphology of biological
+  cells in digital holographic microscopy using a physics-driven neural
+  network,'' \emph{Nature Communications}, vol.~16, p. 1123, 2025.
 
 \bibitem{OConnor2020}
-T.~O'Connor \emph{et~al.}, ``Deep learning-based cell identification and disease diagnosis using spatio-temporal cellular dynamics in compact digital holographic microscopy,'' \emph{Biomedical Optics Express}, vol.~11, no.~2, pp. 1225--1242, 2020.
+T.~O'Connor \emph{et~al.}, ``Deep learning-based cell identification and
+  disease diagnosis using spatio-temporal cellular dynamics in compact digital
+  holographic microscopy,'' \emph{Biomedical Optics Express}, vol.~11, no.~2,
+  pp. 1225--1242, 2020.
 
 \bibitem{Sazak2024}
-H.~Sazak and M.~Kotan, ``Automated blood cell detection and classification in microscopic images using yolov11,'' \emph{Diagnostics}, vol.~14, no.~1, p.~52, 2024.
+H.~Sazak and M.~Kotan, ``Automated blood cell detection and classification in
+  microscopic images using yolov11,'' \emph{Diagnostics}, vol.~14, no.~1,
+  p.~52, 2024.
 
 \bibitem{Alzubaidi2020}
-L.~Alzubaidi \emph{et~al.}, ``Deep learning models for classification of red blood cells in microscopy images to aid in sickle cell anemia diagnosis,'' \emph{Electronics}, vol.~9, no.~3, p. 427, 2020.
+L.~Alzubaidi \emph{et~al.}, ``Deep learning models for classification of red
+  blood cells in microscopy images to aid in sickle cell anemia diagnosis,''
+  \emph{Electronics}, vol.~9, no.~3, p. 427, 2020.
 
 \bibitem{Vabalas2019}
-A.~Vabalas, E.~Gowen, E.~Poliakoff, and A.~J. Casson, ``Machine learning algorithm validation with a limited sample size,'' \emph{PLOS ONE}, vol.~14, no.~11, p. e0224365, 2019.
+A.~Vabalas, E.~Gowen, E.~Poliakoff, and A.~J. Casson, ``Machine learning
+  algorithm validation with a limited sample size,'' \emph{PLOS ONE}, vol.~14,
+  no.~11, p. e0224365, 2019.
 
 \bibitem{Tsamardinos2022}
-I.~Tsamardinos \emph{et~al.}, ``Don't lose samples to estimation,'' \emph{Patterns}, vol.~3, no.~7, p. 100568, 2022.
+I.~Tsamardinos \emph{et~al.}, ``Don't lose samples to estimation,''
+  \emph{Patterns}, vol.~3, no.~7, p. 100568, 2022.
 
 \bibitem{Montero2024}
-J.~Montero \emph{et~al.}, ``Explainable machine learning in medical imaging: From theory to clinical practice,'' \emph{IEEE Access}, vol.~12, pp. 123\,456--123\,478, 2024.
+J.~Montero \emph{et~al.}, ``Explainable machine learning in medical imaging:
+  From theory to clinical practice,'' \emph{IEEE Access}, vol.~12, pp.
+  123\,456--123\,478, 2024.
 
 \bibitem{Mahalanobis1936}
-P.~C. Mahalanobis, ``On the generalised distance in statistics,'' \emph{Proceedings of the National Institute of Sciences of India}, vol.~2, no.~1, pp. 49--55, 1936.
+P.~C. Mahalanobis, ``On the generalised distance in statistics,''
+  \emph{Proceedings of the National Institute of Sciences of India}, vol.~2,
+  no.~1, pp. 49--55, 1936.
 
 \bibitem{Rousseeuw2019}
-P.~J. Rousseeuw \emph{et~al.}, ``Anomaly detection by robust statistics,'' \emph{Wiley Interdisciplinary Reviews: Data Mining and Knowledge Discovery}, vol.~9, no.~2, p. e1233, 2019.
+P.~J. Rousseeuw \emph{et~al.}, ``Anomaly detection by robust statistics,''
+  \emph{Wiley Interdisciplinary Reviews: Data Mining and Knowledge Discovery},
+  vol.~9, no.~2, p. e1233, 2019.
 
 \bibitem{EAFIT2018}
 \BIBentryALTinterwordspacing
-U.~EAFIT, ``Reglamento de propiedad intelectual,'' 2018, accedido: sep. 16, 2025. [Online]. Available: \url{https://www.eafit.edu.co/institucional/reglamentos/Documents/reglamento-propiedad-intelectual-enero-2018-1.pdf}
+U.~EAFIT, ``Reglamento de propiedad intelectual,'' 2018, accedido: sep. 16,
+  2025. [Online]. Available:
+  \url{https://www.eafit.edu.co/institucional/reglamentos/Documents/reglamento-propiedad-intelectual-enero-2018-1.pdf}
 \BIBentrySTDinterwordspacing
 
-\bibitem{Greenbaum2014}
-A.~Greenbaum, W.~Luo, and A.~Ozcan, ``Wide-field computational imaging of pathology slides using lens-free on-chip microscopy,'' \emph{Science Translational Medicine}, vol.~6, no. 267, p. 267ra175, 2014.
+\bibitem{Dheepak2023}
+G.~Dheepak \emph{et~al.}, ``Brain tumor classification: a novel approach
+  integrating glcm, lbp and composite features,'' \emph{Frontiers in Oncology},
+  vol.~13, p. 117234, 2023.
 
 \bibitem{Barburiceanu2021}
-S.~Barburiceanu, R.~Terebes, and S.~Meza, ``3d texture feature extraction and classification using glcm and lbp-based descriptors,'' \emph{Applied Sciences}, vol.~11, no.~4, p. 1679, 2021.
-
-\bibitem{Dheepak2023}
-G.~Dheepak \emph{et~al.}, ``Brain tumor classification: a novel approach integrating glcm, lbp and composite features,'' \emph{Frontiers in Oncology}, vol.~13, p. 117234, 2023.
+S.~Barburiceanu, R.~Terebes, and S.~Meza, ``3d texture feature extraction and
+  classification using glcm and lbp-based descriptors,'' \emph{Applied
+  Sciences}, vol.~11, no.~4, p. 1679, 2021.
 
 \bibitem{Singh2017}
-B.~B. Singh \emph{et~al.}, ``Efficient medical image enhancement using clahe,'' \emph{International Journal of Computer Applications}, vol. 162, no.~6, pp. 11--15, 2017.
-
-\bibitem{Bishop2006}
-C.~M. Bishop, \emph{Pattern Recognition and Machine Learning}.\hskip 1em plus 0.5em minus 0.4em\relax New York, NY, USA: Springer, 2006.
-
-\bibitem{Alagu2022}
-S.~Alagu \emph{et~al.}, ``A novel deep learning approach for sickle cell anemia detection in human {RBCs} using an improved wrapper-based feature selection technique in microscopic blood smear images,'' \emph{Biomedizinische Technik}, vol.~67, no.~5, pp. 485--495, 2022.
-
-\bibitem{Darrin2023}
-M.~Darrin \emph{et~al.}, ``Classification of red cell dynamics with convolutional and recurrent neural networks: a sickle cell disease case study,'' \emph{Scientific Reports}, vol.~13, p. 9124, 2023.
-
-\bibitem{Hosmer2013}
-D.~W. Hosmer, S.~Lemeshow, and R.~X. Sturdivant, \emph{Applied Logistic Regression}, 3rd~ed.\hskip 1em plus 0.5em minus 0.4em\relax Hoboken, NJ, USA: Wiley, 2013.
-
-\bibitem{Breiman2001}
-L.~Breiman, ``Random forests,'' \emph{Machine Learning}, vol.~45, no.~1, pp. 5--32, 2001.
-
-\bibitem{Friedman2001}
-J.~H. Friedman, ``Greedy function approximation: A gradient boosting machine,'' \emph{Annals of Statistics}, vol.~29, no.~5, pp. 1189--1232, 2001.
-
-\bibitem{Goodfellow2016}
-I.~Goodfellow, Y.~Bengio, and A.~Courville, ``Deep learning,'' \emph{MIT Press}, 2016.
+B.~B. Singh \emph{et~al.}, ``Efficient medical image enhancement using clahe,''
+  \emph{International Journal of Computer Applications}, vol. 162, no.~6, pp.
+  11--15, 2017.
 
 \bibitem{Pedregosa2011}
-F.~Pedregosa \emph{et~al.}, ``Scikit-learn: Machine learning in {P}ython,'' \emph{Journal of Machine Learning Research}, vol.~12, pp. 2825--2830, 2011.
+F.~Pedregosa \emph{et~al.}, ``Scikit-learn: Machine learning in {P}ython,''
+  \emph{Journal of Machine Learning Research}, vol.~12, pp. 2825--2830, 2011.
+
+\bibitem{Friedman2001}
+J.~H. Friedman, ``Greedy function approximation: A gradient boosting machine,''
+  \emph{Annals of Statistics}, vol.~29, no.~5, pp. 1189--1232, 2001.
 
 \end{thebibliography}

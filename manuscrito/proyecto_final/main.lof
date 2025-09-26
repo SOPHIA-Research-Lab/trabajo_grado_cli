@@ -2,13 +2,14 @@
 \addvspace {10\p@ }
 \addvspace {10\p@ }
 \addvspace {10\p@ }
+\contentsline {figure}{\numberline {3.1}{\ignorespaces Transformaciones clave aplicadas sobre un holograma falciforme: interferograma original, magnitud logarítmica de la transformada de Fourier, mapa uniforme de LBP, respuesta de un filtro de Gabor, energía combinada de coeficientes wavelet y matriz de coocurrencia GLCM normalizada.}}{20}{figure.caption.9}%
+\contentsline {figure}{\numberline {3.2}{\ignorespaces Comparativa de descriptores entre un holograma sano (fila superior) y uno falciforme (fila inferior). Cada columna exhibe el holograma original, el histograma LBP, la energía espectral por anillos de Fourier y la energía acumulada de los coeficientes wavelet.}}{22}{figure.caption.14}%
 \addvspace {10\p@ }
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {6.1}{\ignorespaces Matriz de confusión producida en el modo profundo.}}{44}{figure.caption.11}%
-\contentsline {figure}{\numberline {6.2}{\ignorespaces Curva ROC del ensamble entrenado en modo profundo.}}{44}{figure.caption.12}%
-\contentsline {figure}{\numberline {6.3}{\ignorespaces Distribución de las características más discriminativas según Cohen's $d$.}}{45}{figure.caption.13}%
-\contentsline {figure}{\numberline {6.4}{\ignorespaces Comparativa de desempeño entre los clasificadores base y el ensamble final.}}{46}{figure.caption.14}%
-\contentsline {figure}{\numberline {6.5}{\ignorespaces Distribución de distancias de Mahalanobis para muestras externas.}}{47}{figure.caption.16}%
-\contentsline {figure}{\numberline {6.6}{\ignorespaces Mapa de calor de predicciones y distancias para organismos no sanguíneos.}}{48}{figure.caption.17}%
+\contentsline {figure}{\numberline {6.1}{\ignorespaces Distribuciones empíricas de las características más discriminativas. Cada panel compara clases sanas (azul) y falciformes (naranja) en pares de atributos; las líneas punteadas marcan medias por clase.}}{39}{figure.caption.20}%
+\contentsline {figure}{\numberline {6.2}{\ignorespaces Matriz de confusión normalizada para el conjunto de prueba.}}{40}{figure.caption.21}%
+\contentsline {figure}{\numberline {6.3}{\ignorespaces Curva ROC del modelo final con el área bajo la curva correspondiente.}}{41}{figure.caption.22}%
+\contentsline {figure}{\numberline {6.4}{\ignorespaces Proyección t-SNE del espacio de características, coloreada por distancia de Mahalanobis.}}{43}{figure.caption.24}%
+\contentsline {figure}{\numberline {6.5}{\ignorespaces Exactitud con intervalos bootstrap y curva de confiabilidad del modelo final.}}{44}{figure.caption.25}%
 \addvspace {10\p@ }

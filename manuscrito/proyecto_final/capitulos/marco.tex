@@ -1,100 +1,206 @@
 \chapter{Marco teórico}\label{chap:marco}
-Este capítulo articula los fundamentos físicos de la microscopía digital holográfica sin lente con los conceptos de aprendizaje automático que sustentan el sistema propuesto. Se enfatizan los modelos matemáticos que describen la formación del holograma, los descriptores utilizados para representar la información óptica y los algoritmos de clasificación y detección de anomalías seleccionados.
+Este capítulo desarrolla el sustento científico que articula la óptica holográfica, la representación matemática de los hologramas y los modelos de aprendizaje automático empleados para su clasificación. Se pretende consolidar un hilo conductor que vaya desde la física de la formación del interferograma hasta los mecanismos de decisión, calibración y gobernanza que permiten utilizar el sistema en contextos clínicos reales.
 
-\section{Microscopía holográfica sin lente}
-La microscopía digital holográfica sin lente (DLHM) se apoya en la interferencia entre una onda de referencia casi plana y una onda objeto que ha interactuado con la muestra biológica. Al iluminar con una fuente coherente, típicamente un LED colimado o un diodo láser, el objeto modula en fase y amplitud el frente de onda incidente. El sensor registra la intensidad
+\section{Formación del holograma y modelos de propagación}
+
+En DLHM el sensor registra en una sola exposición la intensidad resultante de superponer una onda de referencia \(U_{\text{ref}}\) con la onda objeto \(U_{\text{obj}}\) modulada por la muestra. Asumiendo campo escalar, coherencia temporal suficiente y régimen paraxial, la intensidad en el plano del sensor \((x,y)\) es
 \begin{equation}
-I(x,y) = \left|U_{\text{ref}}(x,y) + U_{\text{obj}}(x,y)\right|^2 = |U_{\text{ref}}|^2 + |U_{\text{obj}}|^2 + 2\Re\{U_{\text{ref}} U_{\text{obj}}^{*}\},
+I(x,y)=\bigl|U_{\text{ref}}(x,y)+U_{\text{obj}}(x,y)\bigr|^{2}
+=|U_{\text{ref}}|^{2}+|U_{\text{obj}}|^{2}+2\,\Re\!\left\{U_{\text{ref}}\,U_{\text{obj}}^{*}\right\},
+\label{eq:intensity}
 \end{equation}
-donde $U_{\text{ref}}$ es la onda de referencia y $U_{\text{obj}}$ la onda difractada por el objeto \cite{Amann2019}. Al carecer de lentes, la distancia entre la muestra y el sensor controla el régimen de difracción. En configuraciones típicas de DLHM se opera en el régimen de Fresnel, en el cual la propagación puede aproximarse mediante
+de donde se reconoce que el término de interferencia transporta la información de fase y amplitud de la muestra \cite{Amann2019}. En configuraciones de iluminación cuasi-plana, puede escribirse \(U_{\text{ref}}(x,y)=A_{\text{ref}}e^{j\phi_{\text{ref}}}\) con \(A_{\text{ref}}\) aproximadamente constante sobre el sensor; esta aproximación linealiza el contraste del interferograma y estabiliza el cociente señal-ruido (SNR) frente a fluctuaciones de \(U_{\text{obj}}\) \cite{Amann2019,OConnor2020}.
+
+La propagación desde el plano del objeto \(z=0\) al plano del sensor \(z\) se modela, bajo hipótesis paraxial y banda limitada, por el integral de Fresnel:
 \begin{equation}
-U_{\text{obj}}(x,y,z) = \frac{e^{jkz}}{j\lambda z} \iint U(x',y',0) \exp\left\{\frac{jk}{2z}\big[(x-x')^2 + (y-y')^2\big]\right\} \dd x'\,\dd y',
+U(x,y,z)=\frac{e^{jkz}}{j\lambda z}\iint U(x',y',0)\,
+\exp\!\left\{\frac{jk}{2z}\!\left[(x-x')^{2}+(y-y')^{2}\right]\right\}\, \mathrm{d}x'\,\mathrm{d}y',
+\label{eq:fresnel}
 \end{equation}
-con $\lambda$ la longitud de onda y $k = 2\pi/\lambda$ \cite{Greenbaum2014}. Esta expresión evidencia que, aun sin reconstrucción numérica explícita, el holograma codifica diferencias espaciales ligadas a la morfología celular. Diversos estudios han demostrado que estructuras hemáticas con anisotropías pronunciadas, como las células falciformes, generan patrones de difracción diferenciables \cite{BuitragoDuque2023}.
-
-\subsection{Propagación y modelado matemático}
-El formalismo de Rayleigh--Sommerfeld describe la propagación de una onda escalar en el espacio libre. Bajo la aproximación de Fresnel se adopta un filtro cuadrático que facilita su implementación digital, permitiendo expresar la propagación como una multiplicación en el dominio de Fourier. Si $\mathcal{F}\{\cdot\}$ denota la transformada bidimensional, la reconstrucción numérica clásica se formula como
+con \(k=2\pi/\lambda\) \cite{Greenbaum2014}. Cuando la distancia muestra–sensor es pequeña respecto al tamaño del sensor o se requiere exactitud fuera de la paraxialidad, resulta más apropiada la formulación de Rayleigh–Sommerfeld,
 \begin{equation}
-U(x,y,z) = \mathcal{F}^{-1} \left\{ \mathcal{F}\{U(x,y,0)\} \exp\left[-j\pi\lambda z \left(f_x^2 + f_y^2\right)\right] \right\},
+U(x,y,z)=\frac{1}{j\lambda}\iint U(x',y',0)\,
+\frac{e^{jkr}}{r}\,\cos\theta\;\mathrm{d}x'\,\mathrm{d}y',
+\label{eq:RS}
 \end{equation}
-siendo $(f_x,f_y)$ las frecuencias espaciales \cite{Greenbaum2014}. Esta convolución refleja que el holograma contiene las componentes de fase y amplitud necesarias para recuperar el frente de onda original. Trabajar directamente con el patrón interferométrico evita el costo computacional de la reconstrucción y elimina la necesidad de estimar con precisión la distancia $z$.
+donde \(r=\sqrt{(x-x')^{2}+(y-y')^{2}+z^{2}}\) y \(\theta\) es el ángulo entre la normal al plano y el vector unión; el factor \(\exp(jkr)/r\) preserva la curvatura del frente de onda y permite cuantificar la sensibilidad del patrón a desalineaciones \cite{Greenbaum2014}. En prácticas computacionales, ambas expresiones se implementan mediante sus versiones convolutivas y FFT, cuidando la periodicidad implícita y el \emph{zero-padding} para evitar aliasing circular \cite{Greenbaum2014,OConnor2020}.
 
-\subsection{Fenómenos de muestreo y discretización}
-La digitalización impone restricciones de Nyquist sobre la frecuencia espacial máxima capturable. Para un sensor con paso $\Delta$, la frecuencia máxima es $1/(2\Delta)$, por lo que la distancia muestra--sensor debe seleccionarse para evitar aliasing y asegurar que los órdenes de difracción relevantes se mantengan dentro de la ventana de observación \cite{Greenbaum2014}. Asimismo, la iluminación debe presentar suficiente coherencia temporal y espacial para garantizar contrastes elevados en el patrón. En DLHM portátiles se emplean LEDs con filtros estrechos o diodos láser de bajo costo, asumiendo que la coherencia temporal domina sobre la espacial. La ausencia de lentes introduce el fenómeno de la imagen gemela, un término complejo conjugado que puede interferir con la reconstrucción cuando no se filtra correctamente. En el enfoque propuesto esto deja de ser un problema, porque el clasificador trabaja directamente con el patrón de intensidades registrado, aprovechando la totalidad de la información interferométrica sin cancelar componentes complejas. Además, la distancia corta entre muestra y sensor otorga un campo de visión amplio que permite capturar múltiples eritrocitos por cuadro, potenciando la eficiencia de los programas de cribado.
-
-En comparación con la microscopía con lentes, DLHM ofrece un campo de visión ampliado, ausencia de componentes ópticos costosos y un volumen reducido del hardware \cite{Amann2019}. Sin embargo, al capturar la intensidad en lugar de la fase, la información registrada se presenta como un patrón de moteado que debe ser interpretado mediante técnicas digitales. Tradicionalmente se recurría a algoritmos de reconstrucción numérica basados en transformadas de Fourier para recuperar el campo complejo, lo que exige una etapa adicional de filtrado y requiere conocer parámetros exactos de la geometría óptica \cite{Kim2025}. Esta tesis explora una ruta alternativa: trabajar directamente sobre el holograma registrado, lo que conlleva analizar su textura, simetría y estadísticos de intensidad.
-
-\section{Fisiopatología de la anemia falciforme y retos diagnósticos}
-La anemia falciforme se origina por una mutación puntual en el gen de la cadena $\beta$ de la hemoglobina, que induce la polimerización de la hemoglobina S bajo condiciones de hipoxia. La adopción de una forma rígida y alargada compromete la deformabilidad de los eritrocitos, obstruye capilares y desencadena crisis vaso-oclusivas \cite{Arishi2021}. Los métodos diagnósticos convencionales comprenden electroforesis, cromatografía líquida de alta resolución y ensayos moleculares, técnicas que demandan infraestructura especializada y personal entrenado \cite{McGann2017,Shrestha2025}. El análisis microscópico directo de frotis sanguíneos continúa siendo relevante, pero depende de la experiencia del citotecnólogo y se encuentra expuesto a variabilidad interobservador.
-
-DLHM ofrece una alternativa portable para capturar patrones ópticos sin elementos voluminosos. No obstante, la identificación automática de células falciformes en hologramas enfrenta desafíos adicionales: (i) la coexistencia de eritrocitos sanos y enfermos en un mismo campo; (ii) artefactos ópticos producidos por polvo o microorganismos; y (iii) variaciones en la distancia muestra--sensor durante la captura. Por ello resulta indispensable disponer de estrategias computacionales robustas que sigan principios estadísticos sólidos y sean interpretables para el personal sanitario.
-
-\section{Representación de hologramas}
-Los hologramas capturados poseen propiedades de textura cuasi-periódica y simetría radial que pueden cuantificarse con descriptores estadísticos. En este trabajo se utilizan 84 características agrupadas en cuatro familias principales:
-\begin{enumerate}
-    \item \textbf{Textura de nivel de gris}. La matriz de coocurrencia de niveles de gris (GLCM) cuantifica asociaciones entre píxeles separados por distancias y ángulos definidos \cite{Barburiceanu2021}. Sus derivados---contraste, correlación, homogeneidad y energía---captan regularidades en el patrón interferométrico. El Local Binary Pattern (LBP) codifica transiciones de intensidad alrededor de cada píxel y es sensible a micropatrones circulares asociados con irregularidades de la célula \cite{Dheepak2023}.
-    \item \textbf{Dominios de frecuencia}. La transformada rápida de Fourier (FFT) y los filtros de Gabor permiten identificar frecuencias dominantes y orientaciones táctiles. Los hologramas de células falciformes tienden a mostrar energía desplazada hacia altas frecuencias debido a bordes pronunciados \cite{OConnor2020}.
-    \item \textbf{Características morfológicas}. Medidas como área, perímetro, circularidad, convexidad y solidez se calculan sobre binarizaciones suaves del holograma. Aunque no se segmenta la célula de forma estricta, estas métricas reflejan la distribución espacial de intensidades y correlacionan con la forma general de la célula \cite{Singh2017}.
-    \item \textbf{Momentos invariantes}. Los momentos de Hu capturan relaciones globales que permanecen invariantes ante rotaciones y escalados, útiles para comparar hologramas con orientaciones distintas \cite{Bishop2006}.
-\end{enumerate}
-Estos descriptores han sido empleados en aplicaciones biomédicas con buenos resultados cuando la cantidad de datos no permite entrenar redes profundas \cite{Alagu2022}. La literatura reporta que combinaciones híbridas de GLCM y LBP elevan la sensibilidad en tareas de diagnóstico hematológico porque capturan simultáneamente periodicidad global y microtexturas locales \cite{Dheepak2023}. Complementar estas medidas con momentos y morfología permite interpretar la señal holográfica en múltiples escalas. Su principal ventaja es la interpretabilidad: cada métrica está asociada con una propiedad física o geométrica del holograma.
-
-Para mejorar la estabilidad numérica se normalizan los vectores de características mediante estadísticos robustos y se calcula el estadístico $d$ de Cohen que cuantifica la separación entre clases. Esta medida de efecto, junto con los pesos asignados por el ensamble, constituye la base de los argumentos interpretables reportados en los capítulos posteriores. Adicionalmente, se monitoriza la correlación entre características para detectar redundancias; cuando se identifican pares altamente correlacionados se priorizan aquellos con mayor respaldo teórico (por ejemplo, solidez frente a convexidad) y se documentan las decisiones de descarte para mantener trazabilidad.
-
-\section{Estado del arte en clasificación holográfica}
-Investigaciones recientes han explorado múltiples estrategias para explotar hologramas en tareas biomédicas. Amann \textit{et al.} presentaron una plataforma abierta y de bajo costo capaz de capturar hologramas con componentes impresos en 3D, demostrando la viabilidad de despliegues masivos \cite{Amann2019}. Buitrago-Duque \textit{et al.} diseñaron un prototipo compacto para análisis de frotis sanguíneos que, si bien depende de reconstrucción numérica, abrió la puerta a aplicaciones clínicas portátiles \cite{BuitragoDuque2023}. En el ámbito del aprendizaje profundo, O'Connor \textit{et al.} emplearon redes convolucionales para analizar dinámicas celulares en holografía digital con resultados prometedores \cite{OConnor2020}, mientras que Darrin \textit{et al.} combinaron arquitecturas recurrentes y convolucionales para estudiar movimientos de eritrocitos \cite{Darrin2023}.
-
-No obstante, la mayoría de estos enfoques se apoyan en grandes volúmenes de datos, requieren GPUs para entrenamiento y presentan dificultades de interpretabilidad. Adicionalmente, pocos trabajos reportan protocolos de validación robustos para datasets limitados, un problema conocido que puede inflar las métricas reportadas \cite{Vabalas2019,Tsamardinos2022}. La propuesta de esta tesis se diferencia al privilegiar descriptores físicos explicables, integrar un ensamble heterogéneo y complementar el clasificador con un detector de anomalías, todo ello documentado bajo un pipeline reproducible.
-
-\section{Modelos de clasificación}
-Partiendo de la matriz de características, la tarea de clasificación se aborda con modelos supervisados clásicos que ofrecen explicabilidad y rendimiento competitivo en datasets pequeños.
-
-\subsection{Regresión logística}
-La regresión logística modela la probabilidad de la clase positiva $y=1$ como
+El muestreo discreto impone vínculos estrictos entre el \emph{pitch} del sensor \(\Delta\), la distancia \(z\) y el contenido angular del objeto. Si \(I\) se adquiere en una retícula \(\Delta\times\Delta\), la frecuencia espacial observable está acotada por \(f_{\max}=1/(2\Delta)\). Para un objeto con máximos ángulos de difracción \(\theta_{\max}\), la condición de Nyquist puede expresarse como
 \begin{equation}
-P(y=1\mid \mathbf{x}) = \sigma(\mathbf{w}^{\top}\mathbf{x} + b),
+\frac{\lambda z}{\Delta^{2}} \gtrsim \pi^{-1}\quad\Longleftrightarrow\quad
+z \gtrsim \frac{\pi\,\Delta^{2}}{\lambda},
+\label{eq:nyquist}
 \end{equation}
-donde $\sigma$ es la función sigmoide. Sus coeficientes permiten interpretar la contribución marginal de cada característica, y la regularización $L_2$ mitiga el sobreajuste \cite{Hosmer2013}. El entrenamiento consiste en maximizar la log-verosimilitud penalizada
+relación que fija cotas inferiores para \(z\) y evita que los órdenes de difracción se plieguen en el espectro del sensor \cite{Greenbaum2014}. La coherencia espacial se controla con diafragmas o guías de onda que introducen una función pupilar \(P(u,v)\) en el dominio de frecuencias; en presencia de esta apodización, el campo propagado se expresa como
 \begin{equation}
-\mathcal{L}(\mathbf{w},b) = \sum_{i=1}^{n} \left[y_i \log \hat{p}_i + (1-y_i) \log (1-\hat{p}_i)\right] - \frac{\lambda}{2}\|\mathbf{w}\|_2^2,
+U(x,y,z)=\mathcal{F}^{-1}\!\left\{\mathcal{F}\{U(x,y,0)\}\,H_{z}(u,v)\,P(u,v)\right\},
+\label{eq:angular}
 \end{equation}
-donde $\hat{p}_i$ representa la probabilidad estimada para la muestra $i$ y $\lambda$ controla la magnitud de la penalización. Este término regula la complejidad del modelo y evita coeficientes desmesurados en presencia de datasets pequeños. Además, los signos de $\mathbf{w}$ permiten conocer si una característica favorece la clasificación como SCD (coeficiente positivo) o como Healthy (coeficiente negativo), propiedad que facilita contrastar los resultados con la fenomenología óptica descrita en secciones previas.
+donde \(H_{z}(u,v)\) es el filtro de transferencia de Fresnel en frecuencia. Esta forma pone de manifiesto cómo la óptica del sistema recorta componentes de alta frecuencia y justifica la normalización geométrica y radiométrica previa a la extracción de descriptores \cite{Greenbaum2014,OConnor2020}.
 
-\subsection{Máquinas de soporte vectorial}
-Las máquinas de soporte vectorial (SVM) con kernel radial buscan maximizar el margen entre clases en un espacio de características implícito. La decisión se expresa mediante
+En configuraciones en línea (\emph{on-axis}) la medida \eqref{eq:intensity} contiene los términos \(|U_{\text{ref}}|^{2}\) y \(|U_{\text{obj}}|^{2}\) además del cruzado; la separación espectral de estos términos se logra explotando la curvatura de \(U_{\text{ref}}\) o con esquemas ligeramente \emph{off-axis} que desplazan el lóbulo de interferencia, facilitando el aislamiento del término portador sin reconstrucción explícita del campo complejo \cite{OConnor2020}. La cuantificación del SNR del interferograma puede aproximarse como
 \begin{equation}
-f(\mathbf{x}) = \text{sign}\left( \sum_{i=1}^{N} \alpha_i y_i K(\mathbf{x}, \mathbf{x}_i) + b \right),
+\mathrm{SNR}\approx
+\frac{2A_{\text{ref}}A_{\text{obj}}}{\sqrt{\sigma_{\text{shot}}^{2}+\sigma_{\text{lectura}}^{2}+\sigma_{\text{cuant}}^{2}}},
 \end{equation}
-donde $K$ es un kernel gaussiano y los coeficientes $\alpha_i$ se obtienen resolviendo un problema cuadrático \cite{Bishop2006}. Las SVM se adaptan bien a datasets de alta dimensión y tamaño moderado, proporcionando fronteras no lineales. Para evitar sobreajuste se utiliza validación cruzada durante la búsqueda de hiperparámetros y se normalizan las características, lo cual garantiza que los parámetros $C$ y $\gamma$ mantengan magnitudes razonables.
+con varianzas asociadas a ruido de conteo, lectura y cuantización; esto motiva la elección de exposiciones que mantengan \(A_{\text{ref}}\) dominante pero sin saturación, optimizando el contraste de franjas \cite{Amann2019,OConnor2020}.
 
-\subsection{Métodos basados en árboles}
-Los bosques aleatorios construyen múltiples árboles de decisión sobre subconjuntos aleatorios de características y observaciones, y combinan sus predicciones mediante votación \cite{Breiman2001}. Esta técnica es especialmente útil para detectar interacciones entre características de distinta naturaleza, como texturas y momentos, y para cuantificar la importancia global de cada descriptor. Capturan interacciones no lineales y ofrecen medidas de importancia de características. El gradiente boosting, por su parte, entrena secuencialmente árboles débiles que corrigen los errores residuales del ensamble acumulado \cite{Friedman2001}. Ambas técnicas son robustas a escalas heterogéneas y toleran ruido moderado, atributos valiosos en hologramas capturados en condiciones reales.
+La estabilidad geométrica también es crítica: desalineaciones por \emph{tilt} o curvatura de frente se modelan como fases cuadráticas \(\exp\{j\pi (ax^{2}+by^{2}+cxy)\}\). Tales aberraciones se compensan estimando y retirando el plano/curvatura de fase en el dominio frecuencial, operación que mejora la estacionariedad de las franjas y reduce fugas espectrales \cite{OConnor2020}. En suma, las ecuaciones \eqref{eq:fresnel}–\eqref{eq:angular} y las restricciones de muestreo \eqref{eq:nyquist} delimitan la región de operación segura del montaje DLHM, aportando una base física para los pasos de control de calidad y normalización empleados aguas abajo \cite{Greenbaum2014,Amann2019,OConnor2020}.
+\section{Representación matemática de texturas holográficas}
 
-\subsection{Ensamble heterogéneo}
-El sistema integra los cuatro modelos anteriores mediante un ensamble de votación blanda. Cada clasificador aporta una probabilidad y el resultado final se obtiene al promediar ponderadamente estas salidas. Esta estrategia busca balancear sesgos: la regresión logística provee interpretabilidad lineal, la SVM aporta un margen amplio, los bosques aleatorios cubren interacciones complejas y el gradiente boosting ofrece refinamiento en regiones difíciles. La literatura reporta que los ensambles heterogéneos mejoran la generalización cuando los clasificadores son complementarios \cite{Bishop2006,Montero2024}. En el contexto biomédico, la votación blanda reduce la probabilidad de cometer errores sistemáticos y facilita la calibración de probabilidades, un aspecto clave cuando las decisiones clínicas dependen de umbrales explícitos.
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.95\textwidth]{figuras/hologram_transforms.png}
+    \caption{Transformaciones clave aplicadas sobre un holograma falciforme: interferograma original, magnitud logarítmica de la transformada de Fourier, mapa uniforme de LBP, respuesta de un filtro de Gabor, energía combinada de coeficientes wavelet y matriz de coocurrencia GLCM normalizada.}
+    \label{fig:hologram-transforms}
+\end{figure}
 
-\section{Aprendizaje profundo y enfoques híbridos}
-La bibliografía reciente reporta avances importantes en el uso de redes neuronales convolucionales para clasificar células sanguíneas y reconstruir hologramas \cite{OConnor2020,Darrin2023,Goodfellow2016}. Estos modelos ofrecen alta capacidad de representación, pero demandan grandes cantidades de datos etiquetados y hardware especializado. Además, su interpretabilidad resulta limitada si no se emplean técnicas adicionales como mapas de saliencia o Grad-CAM. En entornos de baja disponibilidad de datos, aplicar redes profundas sin regularización puede conducir a sobreajustes severos y a decisiones difíciles de auditar.
+Un holograma en intensidad \(I:\Omega\subset\mathbb{Z}^{2}\to\mathbb{R}_{+}\) codifica modulaciones mixtas de amplitud y fase cuyo patrón de franjas exhibe periodicidades, anisotropías y discontinuidades finas. La estrategia adoptada es construir un vector de características \(\mathbf{x}\in\mathbb{R}^{d}\) que preserve esa física mediante descriptores locales y globales en dominios espacial, frecuencial y multiescala, evitando la reconstrucción del campo complejo. El flujo se resume en la Fig.~\ref{fig:hologram-transforms} y se fundamenta en operadores con propiedades de invariancia y estabilidad bien caracterizadas \cite{Amann2019,OConnor2020,BuitragoDuque2023}.
 
-En consecuencia, esta tesis adopta un enfoque híbrido que prioriza descriptores físicos y modelos explicables, pero deja abierta la posibilidad de integrar redes neuronales ligeras como extractores de características en futuras etapas. La combinación de ambos mundos permitiría explotar la representación distribuida de las CNN y, al mismo tiempo, conservar mecanismos interpretables como los coeficientes logísticos y las contribuciones de Mahalanobis. Esta perspectiva coincide con tendencias emergentes de aprendizaje automático explicable en medicina \cite{Montero2024}.
+\paragraph{Preprocesamiento radiométrico y normalización geométrica.}
+Sea \(\tilde I\) la versión corregida de \emph{flat-field} y \emph{dark-frame} de \(I\); se normaliza a rango unitario con
+\[
+I_{n}(x,y)=\frac{\tilde I(x,y)-\mathrm{P}_{1}\{\tilde I\}}
+{\mathrm{P}_{99}\{\tilde I\}-\mathrm{P}_{1}\{\tilde I\}},
+\]
+donde \(\mathrm{P}_{q}\{\cdot\}\) denota el percentil \(q\). Para estabilizar el contraste local se emplea realce adaptativo tipo CLAHE sobre \(I_{n}\), lo que atenúa saturaciones y conserva bordes finos relevantes para la textura \cite{Amann2019,BuitragoDuque2023}. Todas las operaciones se realizan tras redimensionar a \(512\times512\) para fijar una malla de muestreo común y respetar las restricciones espectrales discutidas en la Sección previa \cite{Greenbaum2014}.
 
-\section{Validación estadística}
-El tamaño limitado del dataset exige protocolos de validación rigurosos. Se emplea validación cruzada estratificada de $k$ pliegues con $k=5$, que preserva la proporción de clases en cada partición \cite{Vabalas2019}. Para estimar la estabilidad en muestras extremas, se ejecuta también validación Leave-One-Out (LOOCV), en la cual cada holograma actúa una vez como conjunto de prueba. Las métricas reportadas incluyen exactitud, sensibilidad, especificidad, precisión, área bajo la curva ROC y área bajo la curva de precisión-recall. Este repertorio sigue recomendaciones establecidas para estudios biomédicos con datos limitados \cite{Tsamardinos2022}.
-
-\section{Detección de anomalías}
-Tras entrenar el clasificador, se ajusta un detector de anomalías que opera sobre las mismas características. La distancia de Mahalanobis cuantifica el alejamiento de una muestra respecto a la distribución gaussiana multivariada estimada para las clases normales \cite{Mahalanobis1936}. Su definición es
+\paragraph{Patrones locales (LBP).}
+La microtextura alrededor de \((x_{c},y_{c})\) se codifica con el operador
 \begin{equation}
-D_{M}(\mathbf{x}) = \sqrt{(\mathbf{x} - \boldsymbol{\mu})^{\top} \boldsymbol{\Sigma}^{-1} (\mathbf{x} - \boldsymbol{\mu})},
+\operatorname{LBP}_{P,R}(x_{c},y_{c})=\sum_{p=0}^{P-1}
+\mathbf{1}\!\left[g_{p}-g_{c}\ge 0\right]\,2^{p},
+\label{eq:lbp}
 \end{equation}
-donde $\boldsymbol{\mu}$ es el vector promedio y $\boldsymbol{\Sigma}$ la matriz de covarianza. Asumiendo normalidad aproximada, $D_{M}^2$ sigue una distribución $\chi^2$ con $p$ grados de libertad, lo que permite fijar umbrales percentilares \cite{Rousseeuw2019}. En este proyecto se adopta el percentil 95, equivalente a tolerar un 5~\% de falsos positivos. Además, se calculan contribuciones individuales de características evaluando el producto entre la desviación respecto a la media y la diagonal de $\boldsymbol{\Sigma}^{-1}$, lo que ofrece evidencia interpretativa para cada detección.
+donde \(g_{c}=I_{n}(x_{c},y_{c})\) y \(\{g_{p}\}_{p=0}^{P-1}\) son intensidades en una circunferencia de radio \(R\) muestreada con interpolación bilineal. La estadística usada es el histograma normalizado \(h\in\Delta^{2^{P}-1}\). Para reducir la varianza y obtener invariancia a rotación, se adopta la versión uniforme \(u2\) y la variante \(\operatorname{LBP}_{ri}\) basada en rotaciones cíclicas que minimizan el patrón binario \cite{Dheepak2023}.
 
-El detector se aplica sobre hologramas externos de organismos como diatomeas, esporas fúngicas y estructuras vegetales. Estas categorías comparten la escala espacial de los eritrocitos, por lo que constituyen un reto realista para evaluar la sensibilidad del sistema ante interferencias ambientales. Estas muestras actúan como proxy de ruido procedente del entorno de captura y permiten cuantificar la capacidad del sistema para alertar cuando recibe entradas ajenas a su dominio de entrenamiento, requisito clave antes de desplegarse en contextos clínicos reales.
+\paragraph{Coocurrencias de niveles de gris (GLCM).}
+Sea \(Q\) la cuantización escalar de \(I_{n}\) a \(L\) niveles. Para un desplazamiento \(\boldsymbol{\Delta}=(\Delta_{x},\Delta_{y})\) y un ángulo \(\theta\), la matriz de coocurrencias \(P_{\boldsymbol{\Delta},\theta}\in[0,1]^{L\times L}\) se define por
+\begin{equation}
+P_{\boldsymbol{\Delta},\theta}(i,j)=\frac{1}{N}\sum_{(x,y)\in\Omega}
+\mathbf{1}\!\left[Q(x,y)=i\right]\,
+\mathbf{1}\!\left[Q(x+\Delta_{x},y+\Delta_{y})=j\right],
+\label{eq:glcm}
+\end{equation}
+con normalización \(\sum_{i,j}P(i,j)=1\) \cite{Barburiceanu2021}. A partir de \eqref{eq:glcm} se obtienen medidas interpretables: contraste \(C=\sum_{ij}(i-j)^{2}P(i,j)\), homogeneidad \(H=\sum_{ij}P(i,j)/[1+(i-j)^{2}]\), energía \(E=\sum_{ij}P(i,j)^{2}\) y correlación \(\rho=\sum_{ij} ij\,P(i,j)-\mu_{x}\mu_{y}\), con medias \(\mu_{x}\), \(\mu_{y}\). Promediar sobre \(\theta\in\{0,\pi/4,\pi/2,3\pi/4\}\) atenúa efectos direccionales espurios y captura la granularidad interferométrica \cite{Barburiceanu2021}.
 
-\section{Interpretabilidad y consideraciones éticas}
-La integración de algoritmos interpretables es fundamental en aplicaciones médicas. Diversas revisiones señalan que la transparencia en los sistemas de apoyo diagnóstico incrementa la confianza del personal clínico y facilita la auditoría regulatoria \cite{Montero2024}. En el presente trabajo, la interpretabilidad se garantiza en tres niveles: (i) los descriptores físicos mantienen una relación directa con propiedades ópticas o geométricas del holograma; (ii) los modelos lineales, como la regresión logística, ofrecen coeficientes interpretables que cuantifican la influencia marginal de cada característica; y (iii) el detector de anomalías proporciona contribuciones por característica que contextualizan los casos fuera de dominio. Esta combinación permite argumentar cada decisión y documentar posibles sesgos. Asimismo, se respetan lineamientos de protección de datos al trabajar exclusivamente con identificadores anónimos y almacenar los hologramas en servidores controlados por la institución.
+\paragraph{Contenido frecuencial y anisotropía angular.}
+Sea \(\widehat I=\mathcal{F}\{I_{n}\}\) la transformada de Fourier bidimensional. La densidad espectral de potencia \(S(u,v)=|\widehat I(u,v)|^{2}\) permite definir un perfil radial mediante anillos concéntricos \(\mathcal{A}_{k}=\{(u,v): r_{k}\le\sqrt{u^{2}+v^{2}}<r_{k+1}\}\):
+\begin{equation}
+E_{k}=\iint_{\mathcal{A}_{k}} S(u,v)\, \mathrm{d}u\,\mathrm{d}v,
+\label{eq:ringenergy}
+\end{equation}
+que resume el reparto de energía por número de franjas; hologramas con patrones más regulares tienden a concentrar energía en bajas frecuencias \cite{Amann2019,OConnor2020}. La anisotropía se cuantifica con el segundo momento angular del espectro,
+\begin{equation}
+\mathcal{A}=\frac{\lambda_{\max}-\lambda_{\min}}{\lambda_{\max}+\lambda_{\min}},\qquad
+\{\lambda_{\min},\lambda_{\max}\}=\text{autovalores de } \mathbf{M}=\iint
+\begin{bmatrix} u^{2} & uv \\ uv & v^{2}\end{bmatrix}
+\frac{S(u,v)}{\iint S}\,\mathrm{d}u\,\mathrm{d}v,
+\label{eq:anisotropy}
+\end{equation}
+donde \(\mathcal{A}\in[0,1)\) crece con la direccionalidad de las franjas \cite{Amann2019}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{figuras/descriptor_profiles.png}
+    \caption{Comparativa de descriptores entre un holograma sano (fila superior) y uno falciforme (fila inferior). Cada columna exhibe el holograma original, el histograma LBP, la energía espectral por anillos de Fourier y la energía acumulada de los coeficientes wavelet.}
+    \label{fig:descriptor-profiles}
+\end{figure}
+
+\paragraph{Filtros de Gabor.}
+La respuesta orientada se modela con bancos \( \{g_{\theta,\lambda}\} \) definidos por
+\begin{equation}
+g_{\theta,\lambda}(x,y)=
+\exp\!\left(-\frac{x'^{2}+\gamma^{2}y'^{2}}{2\sigma^{2}}\right)
+\cos\!\left(\frac{2\pi x'}{\lambda}\right),\quad
+\begin{cases}
+x' = x\cos\theta + y\sin\theta,\\
+y' = -x\sin\theta + y\cos\theta,
+\end{cases}
+\label{eq:gabor}
+\end{equation}
+y características basadas en momentos de \(|I_{n}*g_{\theta,\lambda}|\) (media, varianza y curtosis por par \((\theta,\lambda)\)) \cite{Alzubaidi2020}.
+
+\paragraph{Energía multiescala por wavelets.}
+La transformada wavelet discreta separa \(I_{n}\) en coeficientes de aproximación \(A^{(\ell)}\) y detalles \(D^{(\ell)}_{h},D^{(\ell)}_{v},D^{(\ell)}_{d}\) por nivel \(\ell\). La energía por escala se define como
+\begin{equation}
+W^{(\ell)}=\frac{1}{|D^{(\ell)}|}
+\sum_{(x,y)}\!\left[D^{(\ell)}_{h}(x,y)^{2}+D^{(\ell)}_{v}(x,y)^{2}+D^{(\ell)}_{d}(x,y)^{2}\right],
+\label{eq:waveenergy}
+\end{equation}
+y captura irregularidades finas y bordes a distintas resoluciones \cite{Alzubaidi2020}.
+
+\paragraph{Morfometría en máscara binaria.}
+Para complementar la textura se obtiene una máscara \(M\) por umbralización adaptativa y limpieza morfológica. A partir de \(M\) se calculan área \(A=\sum M\), perímetro \(P\) y casco convexo \(A_{\text{conv}}\). La circularidad \(C=4\pi A/P^{2}\), la solidez \(S=A/A_{\text{conv}}\) y la excentricidad \(e=\sqrt{1-\lambda_{2}/\lambda_{1}}\) (con \(\lambda_{1}\ge\lambda_{2}\) autovalores de la matriz de inercia) cuantifican deformaciones geométricas asociadas a falcización \cite{Alzubaidi2020}. Se añaden momentos de intensidad a primer–cuarto orden y entropía de Shannon sobre \(I_{n}\) para capturar dispersión radiométrica \cite{Singh2017}.
+
+\paragraph{Estandarización y selección.}
+Todas las características se estandarizan con estimadores robustos (mediana y MAD) y se filtran con pruebas de varianza casi nula; se aplica selección supervisada \(\mathrm{SelectKBest}\) con estadísticos monotónicos y validación anidada para evitar fuga de información \cite{Tsamardinos2022}. Este pipeline produce vectores \(\mathbf{x}\) estables frente a variaciones suaves de iluminación, traslación y rotación, preservando señales físicas relevantes del interferograma \cite{Amann2019,OConnor2020,BuitragoDuque2023}.
+\section{Modelación estadística de los clasificadores}
+
+La tarea de discriminación entre hologramas de eritrocitos sanos y falciformes se formula como un problema de inferencia probabilística en el que, dado un vector de características \(\mathbf{x}\in\mathbb{R}^{d}\), se desea estimar \(p(y=1\mid\mathbf{x})\) con \(y\in\{0,1\}\). El aprendizaje se plantea mediante la minimización del riesgo empírico regularizado, lo que implica resolver
+\begin{equation}
+\hat f \in \arg\min_{f\in\mathcal{H}} \ \frac{1}{n}\sum_{j=1}^{n}\ell\!\left(y_{j},f(\mathbf{x}_{j})\right)+\Omega(f),
+\label{eq:erm}
+\end{equation}
+con una pérdida \(\ell\) apropiada para clasificación y un término \(\Omega\) que controla la complejidad para favorecer generalización, especialmente relevante en el régimen de pocos datos y alta dimensionalidad característico de DLHM \cite{Tsamardinos2022,Vabalas2019}. La estimación de hiperparámetros y la selección de transformaciones se realiza dentro de un esquema de validación cruzada anidada con particiones estratificadas, de forma que cualquier paso de selección o reescalado quede confinado al pliegue de entrenamiento y se evite fuga de información \cite{Tsamardinos2022,Vabalas2019}.
+
+La regresión logística penalizada modela la probabilidad posterior mediante un mapeo sigmoidal de una combinación lineal de características, \(P(y=1\mid\mathbf{x})=\sigma(\beta_{0}+\sum_{i=1}^{d}\beta_{i}x_{i})\) con \(\sigma(z)=1/(1+e^{-z})\). La estimación se formula como una maximización de verosimilitud con penalización \(\ell_{1}\), \(\ell_{2}\) o combinada (elastic net), tal como
+\begin{equation}
+\mathcal{L}(\boldsymbol{\beta})=-\sum_{j=1}^{n}\!\left[y_{j}\log \sigma(z_{j})+(1-y_{j})\log\!\big(1-\sigma(z_{j})\big)\right]
++\lambda\!\left(\alpha\lVert\boldsymbol{\beta}\rVert_{1}+\frac{1-\alpha}{2}\lVert\boldsymbol{\beta}\rVert_{2}^{2}\right),
+\label{eq:logit_elasticnet}
+\end{equation}
+donde \(\lambda>0\) controla la magnitud de la regularización y \(\alpha\in[0,1]\) pondera la esparsidad frente a la estabilidad numérica \cite{Pedregosa2011}. Esta formulación ofrece coeficientes interpretables en términos de log-odds y, con ponderaciones por clase cuando existe desbalance, permite ajustar sensibilidad y especificidad al criterio clínico.
+
+Cuando la separación lineal en el espacio original no es adecuada, la máquina de soporte vectorial con núcleo gaussiano proyecta implícitamente las muestras a un espacio de Hilbert de dimensión infinita en el que la maximización del margen es efectiva. El problema dual
+\begin{equation}
+\max_{\boldsymbol{\alpha}}\ \sum_{j=1}^{n}\alpha_{j}-\frac{1}{2}\sum_{j,k=1}^{n}\alpha_{j}\alpha_{k}y_{j}y_{k}K(\mathbf{x}_{j},\mathbf{x}_{k}),
+\quad \text{sujeto a } 0\le \alpha_{j}\le C,\ \sum_{j}\alpha_{j}y_{j}=0,
+\label{eq:svm_dual}
+\end{equation}
+con \(K(\mathbf{x},\mathbf{x}')=\exp(-\gamma\lVert\mathbf{x}-\mathbf{x}'\rVert^{2})\), produce una función de decisión \(g(\mathbf{x})=\mathrm{sign}(\sum_{j\in SV}\alpha_{j}y_{j}K(\mathbf{x},\mathbf{x}_{j})+b)\) que controla el compromiso entre error de entrenamiento y complejidad mediante \(C\) y \(\gamma\) \cite{Pedregosa2011}. Para disponer de probabilidades calibradas, el puntaje de margen se transforma a escala probabilística con un ajuste logístico o isotónico en un conjunto de calibración independiente del ajuste del hiperparámetro \cite{Pedregosa2011}.
+
+Los modelos basados en árboles exploran interacciones no lineales y umbrales en las variables sin requerir supuestos de linealidad. Un bosque aleatorio entrena múltiples árboles sobre remuestreos de las observaciones y subespacios aleatorios de características, y promedia sus salidas probabilísticas para reducir la varianza debida a la inestabilidad de cada árbol individual. La impureza (Gini o entropía) guía las particiones axis-aligned, y la agregación final hereda robustez ante \emph{outliers} y escalas heterogéneas \cite{Pedregosa2011}. En contraste, el gradiente por potenciación construye un modelo aditivo \(F_{m}(\mathbf{x})=F_{m-1}(\mathbf{x})+\nu\,h_{m}(\mathbf{x})\) donde \(h_{m}\) es un árbol poco profundo ajustado al gradiente negativo de la pérdida logística; la tasa de aprendizaje \(\nu\), el número de iteraciones y la profundidad controlan el equilibrio sesgo–varianza y actúan como regularización explícita en el espacio de funciones \cite{Friedman2001}. La combinación de ambos enfoques aporta capacidad de modelado no lineal complementaria a los clasificadores lineales.
+
+Con el fin de estabilizar el desempeño en el régimen de pocos datos y reducir la varianza de estimación, las salidas probabilísticas de modelos heterogéneos se combinan en una mezcla convexa
+\begin{equation}
+p_{\mathrm{ens}}(y=1\mid\mathbf{x})=\sum_{k}w_{k}\,p_{k}(y=1\mid\mathbf{x}),\qquad w_{k}\ge 0,\ \sum_{k}w_{k}=1,
+\label{eq:softvote}
+\end{equation}
+donde los pesos \(w_{k}\) se determinan en un pliegue de calibración para minimizar una métrica propia de probabilidad, como la pérdida de Brier, preservando la interpretabilidad agregada y amortiguando errores idiosincráticos de cada base \cite{Pedregosa2011}. La decisión final \(\hat y=\mathbf{1}[p_{\mathrm{ens}}\ge \tau]\) se ajusta a costes clínicos mediante la elección de un umbral \(\tau\) que optimiza, por ejemplo, el índice de Youden o que satisface una cota mínima de sensibilidad cuando el falso negativo es crítico.
+
+La evaluación rigurosa de generalización se fundamenta en métricas umbral-independientes y umbral-dependientes. Se reporta el área bajo la curva ROC y, en presencia de desbalance, la curva de precisión–recobrado, junto con precisión balanceada, sensibilidad y especificidad puntuales. La incertidumbre de estas estimaciones se cuantifica con repetición de la validación cruzada estratificada y con intervalos de confianza por \emph{bootstrap}, siempre respetando la anidación: toda transformación de características, estandarización robusta y selección supervisada se ejecuta dentro de cada pliegue de entrenamiento para evitar sesgos optimistas \cite{Vabalas2019,Tsamardinos2022}. La calibración probabilística se verifica mediante diagramas de confiabilidad y pérdida de Brier, aplicando, cuando procede, calibración isotónica o Platt sobre un conjunto de calibración separado del ajuste de hiperparámetros \cite{Pedregosa2011}.
+
+En conjunto, la articulación de un clasificador lineal penalizado, un margin-based kernel method y ensambles de árboles, todos integrados bajo una validación anidada y una capa explícita de calibración, proporciona un andamiaje estadístico coherente con las restricciones del problema: alta dimensionalidad relativa al tamaño muestral, potenciales colinealidades entre descriptores físicos y necesidad de interpretar decisiones a nivel de característica. Este marco da soporte a las afirmaciones de desempeño con garantías estadísticas explícitas y mantiene la trazabilidad necesaria para auditoría y gobernanza del modelo en contextos clínicos \cite{Tsamardinos2022,Vabalas2019,Pedregosa2011,Friedman2001}.
 
 
-La ética del despliegue también exige considerar la comunicación de resultados a pacientes y la supervisión médica. El sistema está concebido como herramienta de apoyo, no como sustituto del juicio clínico. Por ello, la interfaz recomienda explícitamente que cada reporte sea revisado por un profesional de la salud antes de emitir un diagnóstico definitivo.
+\section{Detección de anomalías, calibración e incertidumbre}
 
-\section{Síntesis del marco teórico}
-Los elementos descritos en este capítulo convergen en un enfoque integral: la física del holograma fundamenta la selección de descriptores; la fisiopatología de la anemia falciforme orienta la interpretación biomédica; y los algoritmos de aprendizaje automático aportan el andamiaje estadístico para construir un sistema reproducible y confiable. La incorporación de un detector de anomalías responde a la necesidad de operar en contextos reales donde pueden aparecer contaminantes, mientras que las consideraciones éticas subrayan el papel complementario de la herramienta frente al criterio clínico. Este marco servirá como referencia para justificar las decisiones metodológicas y de diseño presentadas en los capítulos siguientes.
+El funcionamiento seguro en un entorno clínico requiere distinguir entre entradas pertenecientes al dominio de entrenamiento y observaciones que se desvían de él, así como cuantificar y comunicar la incertidumbre asociada a cada decisión. La detección de anomalías se aborda mediante la distancia de Mahalanobis definida sobre el espacio de características estandarizadas. Sea \(\mathbf{x}\in\mathbb{R}^{d}\) el vector de características y sea \((\boldsymbol{\mu},\boldsymbol{\Sigma})\) la media y la covarianza robustas estimadas en el conjunto de entrenamiento; la estadística
+\begin{equation}
+D_{M}^{2}(\mathbf{x})=(\mathbf{x}-\boldsymbol{\mu})^{\top}\boldsymbol{\Sigma}^{-1}(\mathbf{x}-\boldsymbol{\mu})
+\label{eq:mahala}
+\end{equation}
+resume la discrepancia cuadrática con respecto a la distribución empírica del dominio \cite{Mahalanobis1936}. Para atenuar la influencia de atípicos y colinealidades en \(\boldsymbol{\Sigma}\), la estimación se realiza con procedimientos robustos basados en el \emph{Minimum Covariance Determinant} (MCD), que maximizan la verosimilitud sobre subconjuntos de alta densidad y ofrecen consistencia bajo contaminación moderada \cite{Rousseeuw2019}. Bajo supuestos aproximadamente gaussianos en el espacio transformado, \(D_{M}^{2}\) se distribuye como \(\chi^{2}_{d}\), lo que permite fijar un umbral \(\tau_{\alpha}=\chi^{2}_{d,1-\alpha}\) para un nivel de significancia \(\alpha\) y derivar valores \(p\) mediante \(p(\mathbf{x})=1-F_{\chi^{2}_{d}}(D_{M}^{2}(\mathbf{x}))\). La descomposición por coordenadas
+\begin{equation}
+c_{i}(\mathbf{x})=\bigl(e_{i}^{\top}\boldsymbol{\Sigma}^{-1/2}(\mathbf{x}-\boldsymbol{\mu})\bigr)^{2},\qquad i=1,\dots,d,
+\end{equation}
+con \(\{e_{i}\}\) base canónica, ofrece una lectura de contribuciones que facilita interpretar qué componentes del descriptor impulsan la alerta y, por tanto, sustenta la revisión clínica de casos fuera de dominio \cite{Rousseeuw2019}. En la operación prospectiva, el umbral \(\tau_{\alpha}\) se valida por \emph{bootstrap} estratificado para mantener tasas de falsa alarma controladas en tamaños muestrales finitos y para documentar la estabilidad del detector a variaciones de calibración.
+
+La incertidumbre asociada a la clasificación se cuantifica en dos niveles complementarios. En primer lugar, la calibración probabilística verifica la concordancia entre probabilidades pronosticadas y frecuencias observadas. Dada una función \(p(\mathbf{x})\in[0,1]\), la pérdida de Brier
+\begin{equation}
+\mathrm{BS}=\frac{1}{n}\sum_{j=1}^{n}\bigl(p(\mathbf{x}_{j})-y_{j}\bigr)^{2}
+\end{equation}
+proporciona una medida propia, y las curvas de confiabilidad contrastan visualmente la relación entre probabilidad estimada y tasa empírica de positivos en intervalos de puntuación. Cuando se detecta descalibración, se emplea ajuste isotónico o mapeo logístico sobre un conjunto de calibración separado del ajuste de hiperparámetros, manteniendo la independencia entre entrenamiento, calibración y prueba \cite{Pedregosa2011}. En segundo lugar, la predicción conforme introduce conjuntos de salida con garantía de cobertura finita-muestral bajo intercambiabilidad. Sea \(\alpha(\mathbf{x},y)\) una medida de no conformidad calculada a partir de las puntuaciones del modelo; en el esquema \emph{split conformal}, se calcula el cuantil \(q_{1-\epsilon}\) de las no conformidades en un conjunto de calibración y se define el conjunto de predicción
+\begin{equation}
+\Gamma_{\epsilon}(\mathbf{x})=\bigl\{y\in\{0,1\}:\alpha(\mathbf{x},y)\le q_{1-\epsilon}\bigr\},
+\end{equation}
+que garantiza cobertura marginal \(1-\epsilon\) sin supuestos paramétricos \cite{Montero2024}. En clasificación binaria, la elección \(\alpha(\mathbf{x},1)=1-p(\mathbf{x})\) y \(\alpha(\mathbf{x},0)=p(\mathbf{x})\) produce conjuntos \(\Gamma_{\epsilon}(\mathbf{x})\) de tamaño uno (decisión puntual) o dos (abstención informada), lo que resulta apropiado cuando los costos clínicos penalizan con severidad los falsos negativos. La combinación de calibración probabilística y predicción conforme habilita tanto la toma de decisiones costo–sensitivas mediante umbrales explícitos como la emisión de alertas de baja confianza documentadas y auditables \cite{Montero2024,Pedregosa2011}.
+
+\section{Integración interdisciplinaria, ética y líneas de investigación}
+
+El desempeño técnico del sistema depende de un acoplamiento explícito entre la modelación óptica, el diseño estadístico y la práctica clínica. La documentación de parámetros ópticos y condiciones de adquisición—distancia muestra–sensor, longitud de onda, paso del pixel y protocolos de control de iluminación—asegura la reproducibilidad de los interferogramas y sustenta las hipótesis de propagación y muestreo empleadas en el preprocesamiento. La construcción del vector de características y la selección de clasificadores se apoya en validación cruzada anidada y en procedimientos de calibración probabilística, con registro de todas las decisiones de ingeniería y de sus efectos sobre las métricas para mantener trazabilidad y permitir auditoría independiente \cite{Tsamardinos2022,Vabalas2019,Pedregosa2011}. La verificación clínica incorpora la revisión de casos límite, el estudio de errores por subgrupos y la evaluación del impacto de umbrales costo–sensitivos en escenarios de cribado, privilegiando configuraciones con sensibilidad mínima garantizada cuando el falso negativo comporta riesgo sanitario significativo.
+
+El cumplimiento normativo y la gobernanza del modelo se alinean con el reglamento de propiedad intelectual de la Universidad EAFIT, que exige preservar la trazabilidad de datos y modelos, delimitar claramente los derechos de uso y asegurar supervisión humana en decisiones asistenciales \cite{EAFIT2018}. En paralelo, las recomendaciones contemporáneas sobre inteligencia artificial responsable enfatizan la transparencia metodológica, la explicabilidad de las decisiones y los mecanismos de detección de entradas fuera del dominio, todos ellos incorporados mediante reportes reproducibles, análisis de contribuciones en la distancia de Mahalanobis y predicción conforme con cobertura controlada \cite{Montero2024}. Esta arquitectura sugiere líneas de investigación continuas: la caracterización óptica detallada del montaje facilitaría la generación de datos sintéticos controlados para estudios de sensibilidad; los modelos híbridos que integren descriptores físicos con representaciones aprendidas explicables podrían mejorar la sensibilidad a patrones sutiles manteniendo interpretabilidad; la validación multicéntrica permitiría cuantificar robustez ante cambios de dominio y sostener generalización externa en poblaciones diversas.
+
+La consolidación de estos componentes articula un marco que vincula la física de la formación del holograma con la representación estadística y la inferencia probabilística, y que incorpora salvaguardas de detección de dominio y comunicación de incertidumbre. Este marco no sólo proporciona garantías cuantitativas sobre el desempeño esperado, sino que también define prácticas de documentación, supervisión humana y auditoría que son coherentes con la integración del sistema en flujos de trabajo clínicos reales \cite{EAFIT2018,Montero2024}.
